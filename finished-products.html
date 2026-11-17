@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finished Products | INDIAN MURI FACTORY</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:16px;font-family:Arial;background:linear-gradient(135deg,#071c18,#164b3c,#071c18);color:white;min-height:100vh}
+.container{max-width:950px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:22px;margin:0}
+h2{font-size:19px}
+.card{background:#ffffff12;border:1px solid #ffffff25;border-radius:16px;padding:18px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:13px}
+label{display:block;font-size:13px;margin-bottom:7px;color:#cde5da}
+input,select{width:100%;padding:12px;border-radius:9px;background:#102e26;color:white;border:1px solid #527568;font-size:15px}
+button{padding:11px 15px;border:0;border-radius:9px;font-weight:bold;cursor:pointer}
+.primary{background:#19bd7c;color:#06251b}
+.secondary{background:#315c4e;color:white}
+.danger{background:#a83c3c;color:white}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #ffffff22;font-size:13px}
+th{color:#9ce9bd}
+.notice{display:none;padding:12px;border-radius:9px;margin-bottom:15px}
+.success{background:#15583e}
+.error{background:#713333}
+.badge{padding:5px 9px;border-radius:20px;background:#1b6848;font-size:11px}
+.inactive{background:#68452b}
+@media(max-width:600px){.grid{grid-template-columns:1fr}body{padding:10px}.card{padding:14px}h1{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+ <div>
+  <h1>🏭 INDIAN MURI FACTORY</h1>
+  <p style="color:#b8d7c9;font-size:13px">Finished Product Management</p>
+ </div>
+ <button class="secondary" onclick="location.href='./index.html'">← Dashboard</button>
+</header>
+
+<div id="notice" class="notice"></div>
+
+<section class="card">
+ <h2 id="formTitle">➕ Add New Finished Product</h2>
+ <input type="hidden" id="editId">
+
+ <div class="grid">
+  <div>
+   <label>Product Name</label>
+   <input id="productName" placeholder="Example: White Muri 500g">
+  </div>
+  <div>
+   <label>Product Type</label>
+   <select id="productType">
+    <option value="white">White Muri</option>
+    <option value="color">Color Muri</option>
+   </select>
+  </div>
+  <div>
+   <label>Packet Weight (Kg)</label>
+   <input id="weight" type="number" min="0.001" step="0.001" placeholder="Example: 0.5">
+  </div>
+ </div>
+
+ <div class="actions">
+  <button class="primary" id="saveBtn" onclick="saveProduct()">Save Product</button>
+  <button class="secondary" onclick="clearForm()">Clear</button>
+ </div>
+ <p style="color:#b8d7c9;font-size:12px">
+  Example: 500g = 0.5 Kg, 1kg = 1 Kg.
+ </p>
+</section>
+
+<section class="card">
+ <h2>📦 Finished Product List</h2>
+ <div class="actions" style="margin-bottom:14px">
+  <button class="secondary" onclick="loadProducts()">↻ Refresh</button>
+ </div>
+ <div class="table-wrap">
+  <table>
+   <thead>
+    <tr>
+     <th>Product Name</th>
+     <th>Type</th>
+     <th>Weight</th>
+     <th>Status</th>
+     <th>Actions</th>
+    </tr>
+   </thead>
+   <tbody id="productList">
+    <tr><td colspan="5">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
+</div>
+
+<script>
+let db;
+let busy=false;
+let productCache=[];
+
+function notice(message,type="error"){
+ const el=document.getElementById("notice");
+ el.textContent=message;
+ el.className="notice "+type;
+ el.style.display="block";
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function hideNotice(){
+ document.getElementById("notice").style.display="none";
+}
+function safe(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+async function init(){
+ try{
+  if(!window.AFSONA_CONFIG) throw new Error("config.js not found");
+
+  db=window.supabase.createClient(
+   window.AFSONA_CONFIG.SUPABASE_URL,
+   window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  const {data:{session},error}=await db.auth.getSession();
+  if(error) throw error;
+  if(!session){location.href="./index.html";return;}
+
+  await loadProducts();
+ }catch(e){notice("Error: "+e.message);}
+}
+
+async function loadProducts(){
+ const tbody=document.getElementById("productList");
+ tbody.innerHTML='<tr><td colspan="5">Loading...</td></tr>';
+
+ try{
+  const {data,error}=await db.from("finished_products")
+   .select("id,product_name,product_type,weight_kg,is_active,created_at")
+   .order("created_at",{ascending:false});
+
+  if(error) throw error;
+  productCache=data||[];
+
+  if(!productCache.length){
+   tbody.innerHTML='<tr><td colspan="5">No products added yet.</td></tr>';
+   return;
+  }
+
+  tbody.innerHTML=productCache.map(p=>`
+   <tr>
+    <td>${safe(p.product_name)}</td>
+    <td>${p.product_type==="white"?"White Muri":"Color Muri"}</td>
+    <td>${Number(p.weight_kg).toFixed(3)} Kg</td>
+    <td><span class="badge ${p.is_active?"":"inactive"}">${p.is_active?"Active":"Inactive"}</span></td>
+    <td>
+     <div class="actions" style="margin:0">
+      <button class="secondary" onclick="editProduct('${p.id}')">Edit</button>
+      <button class="${p.is_active?"danger":"primary"}" onclick="toggleProduct('${p.id}')">
+       ${p.is_active?"Deactivate":"Activate"}
+      </button>
+     </div>
+    </td>
+   </tr>
+  `).join("");
+ }catch(e){
+  tbody.innerHTML='<tr><td colspan="5">Error: '+safe(e.message)+'</td></tr>';
+ }
+}
+
+async function saveProduct(){
+ if(busy)return;
+ hideNotice();
+
+ const id=document.getElementById("editId").value;
+ const name=document.getElementById("productName").value.trim();
+ const type=document.getElementById("productType").value;
+ const weight=Number(document.getElementById("weight").value);
+
+ if(!name){notice("Enter Product Name");return;}
+ if(!["white","color"].includes(type)){notice("Select a valid product type");return;}
+ if(!Number.isFinite(weight)||weight<=0){notice("Enter a valid packet weight");return;}
+
+ const payload={
+  product_name:name,
+  product_type:type,
+  weight_kg:weight
+ };
+
+ busy=true;
+ const btn=document.getElementById("saveBtn");
+ btn.disabled=true;
+ btn.textContent="Saving...";
+
+ try{
+  let result;
+  if(id){
+   result=await db.from("finished_products").update(payload).eq("id",id);
+  }else{
+   payload.is_active=true;
+   result=await db.from("finished_products").insert(payload);
+  }
+  if(result.error)throw result.error;
+
+  notice(id?"Product updated successfully":"Product added successfully","success");
+  clearForm();
+  await loadProducts();
+ }catch(e){
+  if(e.code==="23505"){
+   notice("This product type and packet weight already exists.");
+  }else{
+   notice("Save failed: "+e.message);
+  }
+ }finally{
+  busy=false;
+  btn.disabled=false;
+  btn.textContent="Save Product";
+ }
+}
+
+function editProduct(id){
+ const p=productCache.find(x=>x.id===id);
+ if(!p)return;
+
+ document.getElementById("editId").value=p.id;
+ document.getElementById("productName").value=p.product_name;
+ document.getElementById("productType").value=p.product_type;
+ document.getElementById("weight").value=p.weight_kg;
+ document.getElementById("formTitle").textContent="✏️ Edit Finished Product";
+ document.getElementById("saveBtn").textContent="Update Product";
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+async function toggleProduct(id){
+ const p=productCache.find(x=>x.id===id);
+ if(!p)return;
+
+ const action=p.is_active?"Deactivate":"Activate";
+ if(!confirm(action+" "+p.product_name+"?"))return;
+
+ try{
+  const {error}=await db.from("finished_products")
+   .update({is_active:!p.is_active}).eq("id",id);
+  if(error)throw error;
+  notice("Product status updated successfully","success");
+  await loadProducts();
+ }catch(e){notice("Update failed: "+e.message);}
+}
+
+function clearForm(){
+ document.getElementById("editId").value="";
+ document.getElementById("productName").value="";
+ document.getElementById("productType").value="white";
+ document.getElementById("weight").value="";
+ document.getElementById("formTitle").textContent="➕ Add New Finished Product";
+ document.getElementById("saveBtn").textContent="Save Product";
+}
+
+init();
+</script>
+</body>
+</html>
