@@ -1,353 +1,511 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Purchase Management | INDIAN MURI FACTORY</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
+
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;color:#fff;background:linear-gradient(135deg,#071c24,#123c36,#102a43);min-height:100vh;padding:18px}
+body{
+ margin:0;padding:15px;
+ font-family:Arial,sans-serif;color:white;
+ background:linear-gradient(135deg,#071c24,#123c36,#102a43);
+ min-height:100vh
+}
 .container{max-width:1050px;margin:auto}
-header{padding:22px;border:1px solid #ffffff30;border-radius:18px;background:#ffffff12;margin-bottom:20px}
-h1{margin:0 0 8px;font-size:25px}
-.card{background:#ffffff12;border:1px solid #ffffff25;border-radius:16px;padding:18px;margin-bottom:18px;backdrop-filter:blur(12px)}
+header{
+ padding:22px;border:1px solid #ffffff30;
+ border-radius:18px;background:#ffffff12;margin-bottom:18px
+}
+h1{font-size:24px;margin:0 0 8px}
+.card{
+ background:#ffffff12;border:1px solid #ffffff25;
+ border-radius:16px;padding:18px;margin-bottom:18px;
+ backdrop-filter:blur(12px)
+}
 h2{font-size:19px;margin-top:0}
 label{display:block;font-size:13px;margin:12px 0 6px;color:#d8eee8}
-input,select,textarea{width:100%;padding:13px;border:1px solid #ffffff35;border-radius:9px;background:#102d32;color:white;font-size:15px}
+input,select,textarea{
+ width:100%;padding:13px;border:1px solid #ffffff35;
+ border-radius:9px;background:#102d32;color:white;
+ font-size:15px
+}
 option{background:#102d32;color:white}
-button{border:0;border-radius:9px;padding:12px 16px;background:#16a36a;color:white;font-weight:bold;cursor:pointer;margin-top:12px}
+button{
+ border:0;border-radius:9px;padding:13px 16px;
+ background:#16a36a;color:white;font-weight:bold;
+ cursor:pointer;margin-top:12px
+}
 button:disabled{opacity:.5}
 .secondary{background:#536b70}
 .remove{background:#b53c3c;padding:7px 10px;margin:0}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.total{font-size:24px;font-weight:bold;color:#76f0b3}
-.item{padding:12px;background:#ffffff12;border-radius:10px;margin-top:10px}
-table{width:100%;border-collapse:collapse;min-width:600px}
-th,td{padding:11px;border-bottom:1px solid #ffffff25;text-align:left;font-size:13px}
+.grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:12px
+}
+.total{font-size:25px;font-weight:bold;color:#76f0b3}
+.item{
+ padding:13px;background:#ffffff12;
+ border-radius:10px;margin-top:10px
+}
+.small{font-size:13px;color:#c8e5dc;margin-top:6px}
 .table-wrap{overflow-x:auto}
-.status{color:#82f3b9}
-#message{white-space:pre-wrap;margin-top:12px}
-@media(max-width:600px){.grid{grid-template-columns:1fr}body{padding:10px}h1{font-size:21px}}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th,td{
+ padding:11px;border-bottom:1px solid #ffffff25;
+ text-align:left;font-size:13px
+}
+#message{white-space:pre-wrap;margin-top:12px;line-height:1.6}
+.top-buttons{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:600px){
+ body{padding:10px}
+ h1{font-size:21px}
+ .grid{grid-template-columns:1fr}
+}
 </style>
 </head>
+
 <body>
 <div class="container">
 
 <header>
-<h1>INDIAN MURI FACTORY</h1>
-<div>Purchase Management System</div>
+ <h1>INDIAN MURI FACTORY</h1>
+ <div>Purchase Management System</div>
+ <div class="top-buttons">
+  <button type="button" class="secondary"
+   onclick="window.location.href='./index.html'">
+   ← Back to Dashboard
+  </button>
+ </div>
 </header>
 
-<div class="card">
-<h2>New Purchase</h2>
+<section class="card">
+ <h2>New Purchase</h2>
 
-<div class="grid">
-<div>
-<label>Supplier</label>
-<select id="supplier">
-<option value="">Loading suppliers...</option>
-</select>
-</div>
-<div>
-<label>Purchase Date</label>
-<input type="date" id="purchaseDate">
-</div>
-</div>
+ <div class="grid">
+  <div>
+   <label>Supplier Name</label>
+   <select id="supplier">
+    <option value="">Loading suppliers...</option>
+   </select>
+  </div>
 
-<h2 style="margin-top:22px">Purchase Items</h2>
+  <div>
+   <label>Purchase Date</label>
+   <input type="date" id="purchaseDate">
+  </div>
+ </div>
 
-<label>Raw Material</label>
-<select id="material">
-<option value="">Loading materials...</option>
-</select>
+ <h2 style="margin-top:25px">Raw Material Details</h2>
 
-<div class="grid">
-<div>
-<label>Quantity</label>
-<input type="number" id="quantity" min="0.001" step="0.001" placeholder="Enter quantity">
-</div>
-<div>
-<label>Unit</label>
-<input type="text" id="unit" placeholder="Kg / Bag / Piece">
-</div>
-<div>
-<label>Unit Price (₹)</label>
-<input type="number" id="price" min="0" step="0.01" placeholder="Enter price">
-</div>
-<div>
-<label>Item Total</label>
-<div class="total" style="padding:10px" id="itemTotal">₹0.00</div>
-</div>
-</div>
+ <label>Raw Material Name</label>
+ <select id="material">
+  <option value="">Loading materials...</option>
+ </select>
 
-<button type="button" id="addItem">+ Add Item</button>
-<div id="itemsList"></div>
+ <div class="grid">
+  <div>
+   <label>Quantity</label>
+   <input type="number" id="quantity"
+    min="0.001" step="0.001" placeholder="Enter quantity">
+  </div>
 
-<hr style="border-color:#ffffff25;margin:20px 0">
-<label>Purchase Notes</label>
-<textarea id="notes" rows="3" placeholder="Optional notes"></textarea>
+  <div>
+   <label>Unit</label>
+   <input type="text" id="unit"
+    placeholder="Kg / Bag / Piece">
+  </div>
 
-<p>Grand Total</p>
-<div class="total">₹<span id="grandTotal">0.00</span></div>
+  <div>
+   <label>Total Price (₹)</label>
+   <input type="number" id="totalPrice"
+    min="0" step="0.01" placeholder="Enter total price">
+  </div>
 
-<button type="button" id="savePurchase" style="width:100%;padding:15px">SAVE PURCHASE</button>
-<div id="message"></div>
-</div>
+  <div>
+   <label>Price Per Unit (Automatic)</label>
+   <div class="total" style="padding:10px" id="unitPrice">
+    ₹0.00
+   </div>
+  </div>
+ </div>
 
-<div class="card">
-<h2>Purchase History</h2>
-<button type="button" id="refreshHistory" class="secondary">Refresh History</button>
-<div class="table-wrap" style="margin-top:15px">
-<table>
-<thead>
-<tr>
-<th>Purchase No.</th>
-<th>Date</th>
-<th>Supplier</th>
-<th>Total</th>
-<th>Status</th>
-</tr>
-</thead>
-<tbody id="history">
-<tr><td colspan="5">Loading...</td></tr>
-</tbody>
-</table>
-</div>
-</div>
+ <button type="button" id="addItem">
+  + Add Raw Material
+ </button>
+
+ <div id="itemsList"></div>
+
+ <hr style="border-color:#ffffff25;margin:22px 0">
+
+ <label>Purchase Notes</label>
+ <textarea id="notes" rows="3"
+  placeholder="Enter purchase details (optional)"></textarea>
+
+ <p>Grand Total</p>
+ <div class="total">₹<span id="grandTotal">0.00</span></div>
+
+ <button type="button" id="savePurchase"
+  style="width:100%;padding:16px">
+  SAVE PURCHASE
+ </button>
+
+ <div id="message"></div>
+</section>
+
+<section class="card">
+ <h2>Purchase History</h2>
+
+ <button type="button" id="refreshHistory" class="secondary">
+  Refresh History
+ </button>
+
+ <div class="table-wrap" style="margin-top:15px">
+  <table>
+   <thead>
+    <tr>
+     <th>Purchase No.</th>
+     <th>Date</th>
+     <th>Supplier</th>
+     <th>Total Amount</th>
+     <th>Status</th>
+    </tr>
+   </thead>
+   <tbody id="history">
+    <tr><td colspan="5">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
 
 </div>
 
 <script>
-(() => {
+(function(){
 "use strict";
 
-const config = window.AFSONA_CONFIG;
-const message = document.getElementById("message");
 const $ = id => document.getElementById(id);
 
-let db;
-let items = [];
-let suppliers = [];
+let db = null;
+let purchaseItems = [];
 
-function money(value) {
-  return Number(value || 0).toFixed(2);
+function money(value){
+ return Number(value || 0).toFixed(2);
 }
 
-function safe(value) {
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[ch]);
+function safe(value){
+ return String(value ?? "").replace(/[&<>"']/g, ch => ({
+  "&":"&amp;",
+  "<":"&lt;",
+  ">":"&gt;",
+  '"':"&quot;",
+  "'":"&#39;"
+ })[ch]);
 }
 
-function showMessage(text, error=false) {
-  message.textContent = text;
-  message.style.color = error ? "#ffaaaa" : "#82f3b9";
+function message(text,error=false){
+ $("message").textContent = text;
+ $("message").style.color = error ? "#ffaaaa" : "#82f3b9";
 }
 
-async function initialize() {
-  if (!config?.SUPABASE_URL || !config?.SUPABASE_ANON_KEY) {
-    showMessage("Supabase configuration missing. Check config.js.", true);
-    return;
-  }
+async function initialize(){
 
-  db = window.supabase.createClient(
-    config.SUPABASE_URL,
-    config.SUPABASE_ANON_KEY
+ const config = window.AFSONA_CONFIG;
+
+ if(!config || !config.SUPABASE_URL || !config.SUPABASE_ANON_KEY){
+  message("Supabase configuration missing. Check config.js.",true);
+  return;
+ }
+
+ db = window.supabase.createClient(
+  config.SUPABASE_URL,
+  config.SUPABASE_ANON_KEY
+ );
+
+ const {data:sessionData,error:sessionError} =
+  await db.auth.getSession();
+
+ if(sessionError) throw sessionError;
+
+ if(!sessionData.session){
+  message("Please login first from the main website.",true);
+  return;
+ }
+
+ await loadSuppliers();
+ await loadMaterials();
+ await loadHistory();
+
+ $("purchaseDate").value =
+  new Date().toLocaleDateString("en-CA");
+
+ message("Purchase system ready.");
+}
+
+async function loadSuppliers(){
+
+ const {data,error} = await db
+  .from("suppliers")
+  .select("id,supplier_name,shop_name")
+  .order("supplier_name");
+
+ if(error) throw error;
+
+ $("supplier").innerHTML =
+  '<option value="">Select Supplier</option>' +
+  (data || []).map(s =>
+   `<option value="${safe(s.id)}">${
+    safe(s.supplier_name || s.shop_name || "Supplier")
+   }</option>`
+  ).join("");
+}
+
+async function loadMaterials(){
+
+ const {data,error} = await db
+  .from("raw_materials")
+  .select("id,material_name,unit")
+  .order("material_name");
+
+ if(error) throw error;
+
+ $("material").innerHTML =
+  '<option value="">Select Raw Material</option>' +
+  (data || []).map(m =>
+   `<option value="${safe(m.id)}" data-unit="${safe(m.unit || "")}">
+    ${safe(m.material_name)}
+   </option>`
+  ).join("");
+
+ if(!data || data.length === 0){
+  message("No raw materials found. Add materials first.",true);
+ }
+}
+
+$("material").addEventListener("change",function(){
+ const option = this.selectedOptions[0];
+ $("unit").value = option?.dataset.unit || "";
+});
+
+function calculatePrice(){
+
+ const quantity = Number($("quantity").value || 0);
+ const total = Number($("totalPrice").value || 0);
+
+ const perUnit = quantity > 0 ? total / quantity : 0;
+
+ $("unitPrice").textContent = "₹" + money(perUnit);
+}
+
+$("quantity").addEventListener("input",calculatePrice);
+$("totalPrice").addEventListener("input",calculatePrice);
+
+$("addItem").addEventListener("click",function(){
+
+ const materialId = $("material").value;
+ const option = $("material").selectedOptions[0];
+
+ const quantity = Number($("quantity").value);
+ const unit = $("unit").value.trim();
+ const totalPrice = Number($("totalPrice").value);
+
+ if(!materialId){
+  return message("Please select Raw Material Name.",true);
+ }
+
+ if(!Number.isFinite(quantity) || quantity <= 0){
+  return message("Please enter valid Quantity.",true);
+ }
+
+ if(!unit){
+  return message("Please enter Unit.",true);
+ }
+
+ if(!Number.isFinite(totalPrice) || totalPrice < 0){
+  return message("Please enter valid Total Price.",true);
+ }
+
+ purchaseItems.push({
+  material_id:materialId,
+  material_name:option.textContent.trim(),
+  quantity:quantity,
+  unit:unit,
+  total_price:totalPrice,
+  unit_price:totalPrice / quantity
+ });
+
+ renderItems();
+
+ $("material").value = "";
+ $("quantity").value = "";
+ $("unit").value = "";
+ $("totalPrice").value = "";
+
+ $("unitPrice").textContent = "₹0.00";
+
+ message("Raw material added successfully.");
+});
+
+function renderItems(){
+
+ let grandTotal = 0;
+
+ $("itemsList").innerHTML = purchaseItems.map((item,index)=>{
+
+  const lineTotal = item.total_price;
+  grandTotal += lineTotal;
+
+  return `
+   <div class="item">
+    <b>${safe(item.material_name)}</b>
+    <div class="small">
+     Quantity: ${money(item.quantity)} ${safe(item.unit)}
+    </div>
+    <div class="small">
+     Total Price: ₹${money(lineTotal)}
+    </div>
+    <div class="small">
+     Price Per Unit: ₹${money(item.unit_price)}
+    </div>
+    <button type="button" class="remove"
+     data-remove="${index}">Remove</button>
+   </div>
+  `;
+ }).join("");
+
+ $("grandTotal").textContent = money(grandTotal);
+}
+
+$("itemsList").addEventListener("click",function(event){
+
+ const button = event.target.closest("[data-remove]");
+ if(!button) return;
+
+ purchaseItems.splice(Number(button.dataset.remove),1);
+ renderItems();
+ message("Item removed.");
+});
+
+$("savePurchase").addEventListener("click",async function(){
+
+ if(!db) return message("Database is not connected.",true);
+
+ const supplierId = $("supplier").value;
+ const date = $("purchaseDate").value;
+ const notes = $("notes").value.trim();
+
+ if(!supplierId) return message("Please select Supplier.",true);
+ if(!date) return message("Please select Purchase Date.",true);
+ if(purchaseItems.length === 0)
+  return message("Please add at least one Raw Material.",true);
+
+ const button = $("savePurchase");
+ button.disabled = true;
+ button.textContent = "SAVING PURCHASE...";
+
+ try{
+
+  const {data,error} = await db.rpc(
+   "create_factory_purchase",
+   {
+    p_supplier_id:supplierId,
+    p_purchase_date:date,
+    p_notes:notes,
+    p_items:purchaseItems.map(item=>({
+     material_id:item.material_id,
+     quantity:item.quantity,
+     unit:item.unit,
+     unit_price:item.unit_price
+    }))
+   }
   );
 
-  const {data:sessionData,error:sessionError} =
-    await db.auth.getSession();
-
-  if (sessionError || !sessionData.session) {
-    showMessage("Please login first from the main website.", true);
-    return;
-  }
-
-  await loadSuppliers();
-  await loadMaterials();
-  await loadHistory();
-}
-
-async function loadSuppliers() {
-  const {data,error} = await db
-    .from("suppliers")
-    .select("id,supplier_name,shop_name")
-    .order("supplier_name");
-
-  if(error) throw error;
-  suppliers = data || [];
-
-  $("supplier").innerHTML =
-    '<option value="">Select Supplier</option>' +
-    suppliers.map(s =>
-      `<option value="${safe(s.id)}">${safe(s.supplier_name || s.shop_name || "Supplier")}</option>`
-    ).join("");
-}
-
-async function loadMaterials() {
-  const {data,error} = await db
-    .from("raw_materials")
-    .select("id,material_name,unit")
-    .order("material_name");
-
   if(error) throw error;
 
-  $("material").innerHTML =
-    '<option value="">Select Raw Material</option>' +
-    (data || []).map(m =>
-      `<option value="${safe(m.id)}" data-unit="${safe(m.unit || "")}">${safe(m.material_name)}</option>`
-    ).join("");
-}
+  message(
+   "PURCHASE SAVED SUCCESSFULLY!\n" +
+   "Purchase Number: " + data.purchase_number + "\n" +
+   "Total Amount: ₹" + money(data.total_amount) + "\n" +
+   "Items: " + data.items_count + "\n" +
+   "Raw Material Stock has been updated."
+  );
 
-$("material").addEventListener("change", () => {
-  const option = $("material").selectedOptions[0];
-  $("unit").value = option?.dataset.unit || "";
-});
-
-function updateItemTotal() {
-  const qty = Number($("quantity").value || 0);
-  const price = Number($("price").value || 0);
-  $("itemTotal").textContent = "₹" + money(qty * price);
-}
-
-$("quantity").addEventListener("input", updateItemTotal);
-$("price").addEventListener("input", updateItemTotal);
-
-$("addItem").addEventListener("click", () => {
-  const option = $("material").selectedOptions[0];
-  const materialId = $("material").value;
-  const quantity = Number($("quantity").value);
-  const unit = $("unit").value.trim();
-  const price = Number($("price").value);
-
-  if(!materialId) return showMessage("Select a raw material.", true);
-  if(!Number.isFinite(quantity) || quantity <= 0)
-    return showMessage("Enter a valid quantity.", true);
-  if(!unit) return showMessage("Enter the unit.", true);
-  if(!Number.isFinite(price) || price < 0)
-    return showMessage("Enter a valid unit price.", true);
-
-  items.push({
-    material_id:materialId,
-    material_name:option.textContent,
-    quantity,
-    unit,
-    unit_price:price
-  });
-
+  purchaseItems = [];
   renderItems();
+
+  $("notes").value = "";
+  $("material").value = "";
   $("quantity").value = "";
-  $("price").value = "";
-  updateItemTotal();
-  showMessage("Item added.");
+  $("unit").value = "";
+  $("totalPrice").value = "";
+  $("unitPrice").textContent = "₹0.00";
+
+  await loadHistory();
+
+ }catch(error){
+  message("PURCHASE FAILED:\n" + error.message,true);
+ }finally{
+  button.disabled = false;
+  button.textContent = "SAVE PURCHASE";
+ }
 });
 
-function renderItems() {
-  let total = 0;
+async function loadHistory(){
 
-  $("itemsList").innerHTML = items.map((item,index) => {
-    const line = item.quantity * item.unit_price;
-    total += line;
+ if(!db) return;
 
-    return `<div class="item">
-      <b>${safe(item.material_name)}</b><br>
-      ${money(item.quantity)} ${safe(item.unit)} × ₹${money(item.unit_price)}
-      = ₹${money(line)}
-      <button class="remove" type="button" data-remove="${index}">Remove</button>
-    </div>`;
-  }).join("");
+ $("history").innerHTML =
+  '<tr><td colspan="5">Loading...</td></tr>';
 
-  $("grandTotal").textContent = money(total);
+ const {data,error} = await db
+  .from("purchases")
+  .select(`
+   purchase_number,
+   purchase_date,
+   total_amount,
+   status,
+   suppliers(supplier_name,shop_name)
+  `)
+  .order("created_at",{ascending:false})
+  .limit(50);
+
+ if(error) throw error;
+
+ $("history").innerHTML = (data || []).map(p=>`
+  <tr>
+   <td>${safe(p.purchase_number)}</td>
+   <td>${safe(p.purchase_date)}</td>
+   <td>${safe(
+    p.suppliers?.supplier_name ||
+    p.suppliers?.shop_name || "-"
+   )}</td>
+   <td>₹${money(p.total_amount)}</td>
+   <td>${safe(p.status)}</td>
+  </tr>
+ `).join("") ||
+ '<tr><td colspan="5">No purchase records found.</td></tr>';
 }
 
-$("itemsList").addEventListener("click", event => {
-  const button = event.target.closest("[data-remove]");
-  if(!button) return;
-
-  items.splice(Number(button.dataset.remove),1);
-  renderItems();
+$("refreshHistory").addEventListener("click",async function(){
+ try{
+  await loadHistory();
+  message("Purchase history refreshed.");
+ }catch(error){
+  message(error.message,true);
+ }
 });
 
-$("savePurchase").addEventListener("click", async () => {
-  if(!db) return showMessage("Database is not connected.",true);
-
-  const supplierId = $("supplier").value;
-  const date = $("purchaseDate").value;
-
-  if(!supplierId) return showMessage("Select a supplier.",true);
-  if(!date) return showMessage("Select purchase date.",true);
-  if(!items.length) return showMessage("Add at least one item.",true);
-
-  const button = $("savePurchase");
-  button.disabled = true;
-  button.textContent = "SAVING...";
-
-  try {
-    const {data,error} = await db.rpc("create_factory_purchase",{
-      p_supplier_id:supplierId,
-      p_purchase_date:date,
-      p_notes:$("notes").value.trim(),
-      p_items:items.map(item => ({
-        material_id:item.material_id,
-        quantity:item.quantity,
-        unit:item.unit,
-        unit_price:item.unit_price
-      }))
-    });
-
-    if(error) throw error;
-
-    showMessage(
-      "Purchase saved successfully!\nPurchase No: " +
-      data.purchase_number +
-      "\nTotal: ₹" + money(data.total_amount)
-    );
-
-    items = [];
-    renderItems();
-    $("notes").value = "";
-    await loadHistory();
-
-  } catch(error) {
-    showMessage("Purchase failed: " + error.message,true);
-  } finally {
-    button.disabled = false;
-    button.textContent = "SAVE PURCHASE";
-  }
+initialize().catch(error=>{
+ message("ERROR: " + error.message,true);
 });
-
-async function loadHistory() {
-  const {data,error} = await db
-    .from("purchases")
-    .select("purchase_number,purchase_date,total_amount,status,suppliers(supplier_name,shop_name)")
-    .order("created_at",{ascending:false})
-    .limit(50);
-
-  if(error) throw error;
-
-  $("history").innerHTML = (data || []).map(p => `
-    <tr>
-      <td>${safe(p.purchase_number)}</td>
-      <td>${safe(p.purchase_date)}</td>
-      <td>${safe(p.suppliers?.supplier_name || p.suppliers?.shop_name || "-")}</td>
-      <td>₹${money(p.total_amount)}</td>
-      <td class="status">${safe(p.status)}</td>
-    </tr>
-  `).join("") || '<tr><td colspan="5">No purchases found.</td></tr>';
-}
-
-$("refreshHistory").addEventListener("click", async () => {
-  try { await loadHistory(); }
-  catch(error) { showMessage(error.message,true); }
-});
-
-$("purchaseDate").value = new Date().toLocaleDateString("en-CA");
-
-initialize().catch(error => showMessage(error.message,true));
 
 })();
 </script>
+
 </body>
 </html>
