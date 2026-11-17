@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#123d55">
+<title>INDIAN MURI FACTORY</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+:root{
+  --blue:#1477b8;
+  --green:#15965d;
+  --white:#ffffff;
+  --glass:rgba(255,255,255,.78);
+  --border:rgba(255,255,255,.55);
+  --dark:#17374a;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  color:var(--dark);
+  min-height:100vh;
+  background:#173b4d;
+}
+#factoryVideo{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-3;
+}
+.video-overlay{
+  position:fixed;
+  inset:0;
+  z-index:-2;
+  background:
+    linear-gradient(120deg,rgba(7,65,105,.60),rgba(9,112,79,.40)),
+    rgba(255,255,255,.12);
+  backdrop-filter:blur(2px);
+}
+body:before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-4;
+  background:linear-gradient(135deg,#0c5675,#168b79,#77b8a0);
+  background-size:300% 300%;
+  animation:colorFlow 15s ease infinite;
+}
+@keyframes colorFlow{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+.topbar{
+  min-height:82px;
+  padding:12px 22px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  color:white;
+  background:rgba(9,43,62,.65);
+  border-bottom:1px solid rgba(255,255,255,.25);
+  backdrop-filter:blur(18px);
+  position:sticky;
+  top:0;
+  z-index:20;
+}
+.logo{
+  width:55px;height:55px;
+  border-radius:15px;
+  background:linear-gradient(135deg,#fff,#d9f8e9);
+  color:#08784b;
+  display:grid;place-items:center;
+  font-size:20px;font-weight:900;
+}
+.brand{flex:1}
+.brand h1{margin:0;font-size:22px;letter-spacing:1px}
+.brand p{margin:5px 0 0;font-size:11px;letter-spacing:2px;color:#d7f5e9}
+.menu-btn{
+  display:none;
+  border:0;border-radius:10px;
+  padding:10px 14px;
+  background:#ffffff25;color:white;
+  font-size:23px;
+}
+.layout{display:flex;min-height:calc(100vh - 82px)}
+.sidebar{
+  width:245px;
+  padding:18px 13px;
+  background:rgba(9,43,62,.60);
+  backdrop-filter:blur(18px);
+  border-right:1px solid #ffffff30;
+}
+.side-title{
+  color:#c9e9e5;font-size:11px;
+  letter-spacing:2px;padding:10px 12px;
+}
+.nav-btn{
+  width:100%;display:flex;align-items:center;
+  gap:12px;text-align:left;
+  padding:12px 13px;margin:4px 0;
+  border:1px solid transparent;border-radius:12px;
+  background:transparent;color:white;
+  font-size:14px;cursor:pointer;
+}
+.nav-btn:hover,.nav-btn.active{
+  background:rgba(255,255,255,.20);
+  border-color:#ffffff55;
+}
+.nav-icon{width:22px;text-align:center;font-size:18px}
+.main{flex:1;min-width:0;padding:25px}
+.glass{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:19px;
+  backdrop-filter:blur(18px);
+  box-shadow:0 12px 35px rgba(0,30,50,.15);
+}
+.page-head{padding:20px 23px;margin-bottom:20px}
+.page-head h2{margin:0 0 7px;font-size:25px}
+.page-head p{margin:0;color:#587080;font-size:13px}
+.cards{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:15px;margin-bottom:20px;
+}
+.stat{padding:19px;min-height:125px}
+.stat-label{font-size:13px;color:#536b7a}
+.stat-value{font-size:27px;font-weight:800;margin-top:14px}
+.stat-icon{font-size:23px}
+.blue{color:#1477b8}
+.green{color:#15965d}
+.orange{color:#d27b21}
+.purple{color:#7853b7}
+.content-card{padding:22px;margin-bottom:20px}
+.content-card h3{margin:0 0 17px}
+.form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px;
+}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12px;font-weight:bold;color:#405d6d}
+.field input,.field select,.field textarea{
+  width:100%;padding:12px;
+  border:1px solid #d3e1e8;border-radius:10px;
+  background:#ffffffeb;font-size:14px;outline:none;
+}
+.field input:focus,.field select:focus{border-color:#1684bd}
+.btn{
+  border:0;border-radius:10px;
+  padding:12px 19px;font-weight:bold;
+  cursor:pointer;color:white;
+  background:linear-gradient(120deg,#1477b8,#15965d);
+}
+.btn:hover{filter:brightness(1.08)}
+.btn-secondary{background:#526c7b}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:550px}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #dce7eb;font-size:13px}
+th{background:#eaf3f7;color:#31566b}
+.empty{text-align:center;color:#637c89;padding:25px}
+.hidden{display:none!important}
+.login-wrap{
+  min-height:calc(100vh - 82px);
+  display:grid;place-items:center;padding:20px;
+}
+.login-card{width:min(420px,100%);padding:30px}
+.login-card h2{text-align:center;margin-top:0}
+.login-card .field{margin:14px 0}
+.notice{font-size:12px;color:#617987;margin-top:12px;line-height:1.5}
+.status{font-size:13px;margin-top:12px;color:#145c43}
+footer{text-align:center;color:white;font-size:12px;padding:20px}
+@media(max-width:1000px){
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  .topbar{padding:10px 13px;min-height:70px}
+  .brand h1{font-size:16px}
+  .brand p{font-size:9px}
+  .logo{width:45px;height:45px;font-size:16px}
+  .menu-btn{display:block}
+  .layout{display:block}
+  .sidebar{
+    display:none;position:fixed;top:70px;bottom:0;
+    left:0;width:270px;z-index:30;
+    overflow-y:auto;background:rgba(8,42,59,.96);
+  }
+  .sidebar.open{display:block}
+  .main{padding:14px}
+  .cards{gap:10px}
+  .stat{padding:14px;min-height:110px}
+  .stat-value{font-size:22px}
+  .page-head{padding:17px}
+  .page-head h2{font-size:21px}
+  .form-grid{grid-template-columns:1fr}
+  .content-card{padding:16px}
+}
+</style>
+</head>
+
+<body>
+<video id="factoryVideo" autoplay muted loop playsinline>
+  <source src="factory-bg.mp4" type="video/mp4">
+</video>
+<div class="video-overlay"></div>
+
+<header class="topbar">
+  <div class="logo">IMF</div>
+  <div class="brand">
+    <h1>INDIAN MURI FACTORY</h1>
+    <p>FACTORY MANAGEMENT SYSTEM</p>
+  </div>
+  <button class="menu-btn" onclick="toggleMenu()">☰</button>
+  <button id="logoutTop" class="btn hidden" onclick="logout()">Logout</button>
+</header>
+
+<section id="loginScreen" class="login-wrap">
+  <div class="glass login-card">
+    <div style="text-align:center;font-size:45px">🏭</div>
+    <h2>Factory Admin Login</h2>
+    <p style="text-align:center;color:#607987;font-size:13px">
+      Sign in to manage your factory
+    </p>
+    <div class="field">
+      <label>Email Address</label>
+      <input id="email" type="email" placeholder="Enter your email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input id="password" type="password" placeholder="Enter password">
+    </div>
+    <button class="btn" style="width:100%;margin-top:12px" onclick="login()">
+      Login to Dashboard
+    </button>
+    <div id="loginMessage" class="status"></div>
+    <p class="notice">Only approved factory administrators can access this website.</p>
+  </div>
+</section>
+
+<div id="appScreen" class="layout hidden">
+  <aside id="sidebar" class="sidebar">
+    <div class="side-title">MAIN MENU</div>
+    <button class="nav-btn active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
+    <button class="nav-btn" onclick="showPage('customers',this)">👥 Customers</button>
+    <button class="nav-btn" onclick="showPage('suppliers',this)">🚚 Suppliers</button>
+    <div class="side-title">FACTORY OPERATIONS</div>
+    <button class="nav-btn" onclick="showPage('purchases',this)">🛒 Purchases</button>
+    <button class="nav-btn" onclick="showPage('production',this)">🏭 Production</button>
+    <button class="nav-btn" onclick="showPage('stock',this)">📦 Stock Management</button>
+    <button class="nav-btn" onclick="showPage('sales',this)">💰 Sales & Invoices</button>
+    <button class="nav-btn" onclick="showPage('delivery',this)">🚛 Deliveries</button>
+    <div class="side-title">STAFF & ACCOUNTS</div>
+    <button class="nav-btn" onclick="showPage('workers',this)">👷 Workers & Salary</button>
+    <button class="nav-btn" onclick="showPage('expenses',this)">🧾 Expenses</button>
+    <button class="nav-btn" onclick="showPage('cashbank',this)">🏦 Cash & Bank</button>
+    <button class="nav-btn" onclick="showPage('reports',this)">📈 Reports</button>
+    <button class="nav-btn" onclick="showPage('settings',this)">⚙️ Settings</button>
+  </aside>
+
+  <main class="main">
+    <section id="page-dashboard" class="page">
+      <div class="glass page-head">
+        <h2>Factory Dashboard</h2>
+        <p>Welcome to INDIAN MURI FACTORY. Your business at a glance.</p>
+      </div>
+      <div class="cards">
+        <div class="glass stat">
+          <div class="stat-icon blue">💰</div>
+          <div class="stat-label">Today's Sales</div>
+          <div class="stat-value" id="todaySales">₹ 0</div>
+        </div>
+        <div class="glass stat">
+          <div class="stat-icon green">📈</div>
+          <div class="stat-label">Today's Profit</div>
+          <div class="stat-value" id="todayProfit">₹ 0</div>
+        </div>
+        <div class="glass stat">
+          <div class="stat-icon purple">👥</div>
+          <div class="stat-label">Total Customers</div>
+          <div class="stat-value" id="totalCustomers">0</div>
+        </div>
+        <div class="glass stat">
+          <div class="stat-icon orange">📦</div>
+          <div class="stat-label">Finished Stock</div>
+          <div class="stat-value" id="finishedStock">0 KG</div>
+        </div>
+      </div>
+      <div class="cards">
+        <div class="glass stat">
+          <div class="stat-icon blue">🛒</div>
+          <div class="stat-label">Today's Purchases</div>
+          <div class="stat-value" id="todayPurchases">₹ 0</div>
+        </div>
+        <div class="glass stat">
+          <div class="stat-icon green">🧾</div>
+          <div class="stat-label">Today's Expenses</div>
+          <div class="stat-value" id="todayExpenses">₹ 0</div>
+        </div>
+        <div class="glass stat">
+          <div class="stat-icon orange">📋</div>
+          <div class="stat-label">Customer Due</div>
+          <div class="stat-value" id="customerDue">₹ 0</div>
+        </div>
+        <div class="glass stat">
+          <div class="stat-icon purple">🏭</div>
+          <div class="stat-label">Total Suppliers</div>
+          <div class="stat-value" id="totalSuppliers">0</div>
+        </div>
+      </div>
+      <div class="glass content-card">
+        <h3>Factory Overview</h3>
+        <p id="dashboardMessage">Loading factory information...</p>
+      </div>
+    </section>
+
+    <section id="page-customers" class="page hidden">
+      <div class="glass page-head">
+        <h2>Customer Management</h2>
+        <p>Add and manage your muri customers.</p>
+      </div>
+      <div class="glass content-card">
+        <h3>Add New Customer</h3>
+        <div class="form-grid">
+          <div class="field"><label>Customer Name *</label><input id="c_name" placeholder="Customer name"></div>
+          <div class="field"><label>Shop Name</label><input id="c_shop" placeholder="Shop name"></div>
+          <div class="field"><label>Mobile Number *</label><input id="c_mobile" placeholder="Mobile number"></div>
+          <div class="field"><label>WhatsApp Number</label><input id="c_whatsapp" placeholder="WhatsApp number"></div>
+          <div class="field"><label>PIN Code</label><input id="c_pin" maxlength="6" placeholder="6 digit PIN code"></div>
+          <div class="field"><label>Village</label><input id="c_village" placeholder="Village"></div>
+          <div class="field"><label>Post Office</label><input id="c_post" placeholder="Post office"></div>
+          <div class="field"><label>Police Station</label><input id="c_police" placeholder="Police station"></div>
+          <div class="field"><label>District</label><input id="c_district" placeholder="District"></div>
+          <div class="field"><label>State</label><input id="c_state" value="West Bengal"></div>
+          <div class="field"><label>Full Address</label><input id="c_address" placeholder="Full address"></div>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="addCustomer()">Save Customer</button>
+          <button class="btn btn-secondary" onclick="loadCustomers()">Refresh List</button>
+        </div>
+        <div id="customerMessage" class="status"></div>
+      </div>
+      <div class="glass content-card">
+        <h3>Customer List</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Shop</th><th>Mobile</th><th>District</th><th>PIN</th></tr></thead>
+            <tbody id="customerRows"><tr><td colspan="5" class="empty">No data loaded</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-suppliers" class="page hidden">
+      <div class="glass page-head">
+        <h2>Supplier Management</h2>
+        <p>Manage raw material suppliers and their details.</p>
+      </div>
+      <div class="glass content-card">
+        <h3>Add New Supplier</h3>
+        <div class="form-grid">
+          <div class="field"><label>Supplier Name *</label><input id="s_name" placeholder="Supplier name"></div>
+          <div class="field"><label>Shop Name</label><input id="s_shop" placeholder="Shop name"></div>
+          <div class="field"><label>Mobile Number *</label><input id="s_mobile" placeholder="Mobile number"></div>
+          <div class="field"><label>WhatsApp Number</label><input id="s_whatsapp" placeholder="WhatsApp number"></div>
+          <div class="field"><label>PIN Code</label><input id="s_pin" maxlength="6" placeholder="6 digit PIN code"></div>
+          <div class="field"><label>Village</label><input id="s_village" placeholder="Village"></div>
+          <div class="field"><label>Post Office</label><input id="s_post" placeholder="Post office"></div>
+          <div class="field"><label>Police Station</label><input id="s_police" placeholder="Police station"></div>
+          <div class="field"><label>District</label><input id="s_district" placeholder="District"></div>
+          <div class="field"><label>State</label><input id="s_state" value="West Bengal"></div>
+          <div class="field"><label>Full Address</label><input id="s_address" placeholder="Full address"></div>
+        </div>
+        <div class="actions">
+          <button class="btn" onclick="addSupplier()">Save Supplier</button>
+          <button class="btn btn-secondary" onclick="loadSuppliers()">Refresh List</button>
+        </div>
+        <div id="supplierMessage" class="status"></div>
+      </div>
+      <div class="glass content-card">
+        <h3>Supplier List</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Shop</th><th>Mobile</th><th>District</th><th>PIN</th></tr></thead>
+            <tbody id="supplierRows"><tr><td colspan="5" class="empty">No data loaded</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-placeholder" class="page hidden">
+      <div class="glass page-head">
+        <h2 id="placeholderTitle">Factory Module</h2>
+        <p>This module will be connected in the next development steps.</p>
+      </div>
+      <div class="glass content-card">
+        <h3>Module Setup</h3>
+        <p id="placeholderText">The design is ready. The database functions will be added step by step.</p>
+      </div>
+    </section>
+  </main>
+</div>
+  <script>
+let db = null;
+let currentUser = null;
+
+function message(id,text){
+  const el=document.getElementById(id);
+  if(el) el.textContent=text;
+}
+
+function money(value){
+  return "₹ " + Number(value || 0).toLocaleString("en-IN",{maximumFractionDigits:2});
+}
+
+function toggleMenu(){
+  document.getElementById("sidebar").classList.toggle("open");
+}
+
+function showPage(name,button){
+  document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"));
+
+  const page=document.getElementById("page-"+name);
+  if(page) page.classList.remove("hidden");
+
+  if(button) button.classList.add("active");
+
+  if(name!=="dashboard" && name!=="customers" && name!=="suppliers"){
+    const titles={
+      purchases:"Purchases",
+      production:"Production",
+      stock:"Stock Management",
+      sales:"Sales & Invoices",
+      delivery:"Deliveries",
+      workers:"Workers & Salary",
+      expenses:"Expenses",
+      cashbank:"Cash & Bank",
+      reports:"Reports",
+      settings:"Factory Settings"
+    };
+    document.getElementById("placeholderTitle").textContent=titles[name] || "Factory Module";
+  }
+
+  if(name==="customers") loadCustomers();
+  if(name==="suppliers") loadSuppliers();
+
+  if(window.innerWidth<=700){
+    document.getElementById("sidebar").classList.remove("open");
+  }
+}
+
+async function login(){
+  const email=document.getElementById("email").value.trim();
+  const password=document.getElementById("password").value;
+  message("loginMessage","Checking login...");
+
+  if(!email || !password){
+    message("loginMessage","Enter email and password.");
+    return;
+  }
+
+  if(!db){
+    message("loginMessage","Database connection is not ready. Check config.js.");
+    return;
+  }
+
+  const {data,error}=await db.auth.signInWithPassword({email,password});
+  if(error){
+    message("loginMessage",error.message);
+    return;
+  }
+
+  await checkAdmin(data.user);
+}
+
+async function checkAdmin(user){
+  const {data,error}=await db
+    .from("profiles")
+    .select("role,status")
+    .eq("id",user.id)
+    .single();
+
+  if(error || !data || data.role!=="admin" || data.status!=="approved"){
+    await db.auth.signOut();
+    message("loginMessage","Access denied. An approved administrator account is required.");
+    return;
+  }
+
+  currentUser=user;
+  document.getElementById("loginScreen").classList.add("hidden");
+  document.getElementById("appScreen").classList.remove("hidden");
+  document.getElementById("logoutTop").classList.remove("hidden");
+  await loadDashboard();
+}
+
+async function logout(){
+  if(db) await db.auth.signOut();
+  currentUser=null;
+  document.getElementById("appScreen").classList.add("hidden");
+  document.getElementById("loginScreen").classList.remove("hidden");
+  document.getElementById("logoutTop").classList.add("hidden");
+  message("loginMessage","You have signed out.");
+}
+
+async function loadDashboard(){
+  message("dashboardMessage","Loading dashboard data...");
+
+  const [customers,suppliers,dashboard]=await Promise.all([
+    db.from("customers").select("id",{count:"exact",head:true}),
+    db.from("suppliers").select("id",{count:"exact",head:true}),
+    db.from("factory_daily_dashboard").select("*").limit(1)
+  ]);
+
+  if(!customers.error)
+    document.getElementById("totalCustomers").textContent=customers.count ?? 0;
+
+  if(!suppliers.error)
+    document.getElementById("totalSuppliers").textContent=suppliers.count ?? 0;
+
+  if(!dashboard.error && dashboard.data && dashboard.data.length){
+    const d=dashboard.data[0];
+    const pick=(...keys)=>{
+      for(const k of keys) if(d[k]!==undefined && d[k]!==null) return d[k];
+      return 0;
+    };
+    document.getElementById("todaySales").textContent=money(pick("today_sales","sales_total","total_sales"));
+    document.getElementById("todayPurchases").textContent=money(pick("today_purchases","purchase_total","total_purchases"));
+    document.getElementById("todayExpenses").textContent=money(pick("today_expenses","expense_total","total_expenses"));
+    document.getElementById("customerDue").textContent=money(pick("customer_due","total_customer_due"));
+  }
+
+  document.getElementById("dashboardMessage").textContent=
+    "Dashboard connected. Profit and stock figures will be activated after the costing and stock reports are connected.";
+}
+
+async function addCustomer(){
+  const name=document.getElementById("c_name").value.trim();
+  const mobile=document.getElementById("c_mobile").value.trim();
+
+  if(!name || !mobile){
+    message("customerMessage","Customer name and mobile number are required.");
+    return;
+  }
+
+  const record={
+    customer_name:name,
+    shop_name:document.getElementById("c_shop").value.trim(),
+    mobile,
+    whatsapp:document.getElementById("c_whatsapp").value.trim(),
+    pin_code:document.getElementById("c_pin").value.trim(),
+    village:document.getElementById("c_village").value.trim(),
+    post_office:document.getElementById("c_post").value.trim(),
+    police_station:document.getElementById("c_police").value.trim(),
+    district:document.getElementById("c_district").value.trim(),
+    state:document.getElementById("c_state").value.trim() || "West Bengal",
+    address:document.getElementById("c_address").value.trim()
+  };
+
+  const {error}=await db.from("customers").insert(record);
+  if(error){
+    message("customerMessage","Save failed: "+error.message);
+    return;
+  }
+
+  message("customerMessage","Customer saved successfully.");
+  document.querySelectorAll("#page-customers input").forEach(i=>{
+    if(i.id!=="c_state") i.value="";
+  });
+  document.getElementById("c_state").value="West Bengal";
+  await loadCustomers();
+  await loadDashboard();
+}
+
+async function loadCustomers(){
+  const {data,error}=await db.from("customers").select("*").order("created_at",{ascending:false}).limit(200);
+  const body=document.getElementById("customerRows");
+
+  if(error){
+    body.innerHTML='<tr><td colspan="5" class="empty">Unable to load customers: '+escapeHTML(error.message)+'</td></tr>';
+    return;
+  }
+
+  if(!data || !data.length){
+    body.innerHTML='<tr><td colspan="5" class="empty">No customers found.</td></tr>';
+    return;
+  }
+
+  body.innerHTML=data.map(c=>`
+    <tr>
+      <td>${escapeHTML(c.customer_name)}</td>
+      <td>${escapeHTML(c.shop_name)}</td>
+      <td>${escapeHTML(c.mobile)}</td>
+      <td>${escapeHTML(c.district)}</td>
+      <td>${escapeHTML(c.pin_code)}</td>
+    </tr>`).join("");
+}
+
+async function addSupplier(){
+  const name=document.getElementById("s_name").value.trim();
+  const mobile=document.getElementById("s_mobile").value.trim();
+
+  if(!name || !mobile){
+    message("supplierMessage","Supplier name and mobile number are required.");
+    return;
+  }
+
+  const record={
+    supplier_name:name,
+    shop_name:document.getElementById("s_shop").value.trim(),
+    mobile,
+    whatsapp:document.getElementById("s_whatsapp").value.trim(),
+    pin_code:document.getElementById("s_pin").value.trim(),
+    village:document.getElementById("s_village").value.trim(),
+    post_office:document.getElementById("s_post").value.trim(),
+    police_station:document.getElementById("s_police").value.trim(),
+    district:document.getElementById("s_district").value.trim(),
+    state:document.getElementById("s_state").value.trim() || "West Bengal",
+    address:document.getElementById("s_address").value.trim()
+  };
+
+  const {error}=await db.from("suppliers").insert(record);
+  if(error){
+    message("supplierMessage","Save failed: "+error.message);
+    return;
+  }
+
+  message("supplierMessage","Supplier saved successfully.");
+  document.querySelectorAll("#page-suppliers input").forEach(i=>{
+    if(i.id!=="s_state") i.value="";
+  });
+  document.getElementById("s_state").value="West Bengal";
+  await loadSuppliers();
+  await loadDashboard();
+}
+
+async function loadSuppliers(){
+  const {data,error}=await db.from("suppliers").select("*").order("created_at",{ascending:false}).limit(200);
+  const body=document.getElementById("supplierRows");
+
+  if(error){
+    body.innerHTML='<tr><td colspan="5" class="empty">Unable to load suppliers: '+escapeHTML(error.message)+'</td></tr>';
+    return;
+  }
+
+  if(!data || !data.length){
+    body.innerHTML='<tr><td colspan="5" class="empty">No suppliers found.</td></tr>';
+    return;
+  }
+
+  body.innerHTML=data.map(s=>`
+    <tr>
+      <td>${escapeHTML(s.supplier_name)}</td>
+      <td>${escapeHTML(s.shop_name)}</td>
+      <td>${escapeHTML(s.mobile)}</td>
+      <td>${escapeHTML(s.district)}</td>
+      <td>${escapeHTML(s.pin_code)}</td>
+    </tr>`).join("");
+}
+
+function escapeHTML(value){
+  return String(value ?? "").replace(/[&<>"']/g,ch=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[ch]));
+}
+
+async function startApp(){
+  if(!window.AFSONA_CONFIG_READY ||
+     !window.AFSONA_CONFIG ||
+     !window.AFSONA_CONFIG.SUPABASE_URL ||
+     !window.AFSONA_CONFIG.SUPABASE_ANON_KEY){
+    message("loginMessage","Supabase configuration is missing. Check config.js.");
+    return;
+  }
+
+  try{
+    db=window.supabase.createClient(
+      window.AFSONA_CONFIG.SUPABASE_URL,
+      window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+    );
+
+    const {data}=await db.auth.getSession();
+    if(data.session){
+      await checkAdmin(data.session.user);
+    }
+  }catch(e){
+    message("loginMessage","Connection error: "+e.message);
+  }
+}
+
+startApp();
+</script>
+</body>
+</html>
+
+<footer>© INDIAN MURI FACTORY | FACTORY MANAGEMENT SYSTEM</footer>
