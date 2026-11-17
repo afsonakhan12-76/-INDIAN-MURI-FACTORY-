@@ -234,8 +234,48 @@ footer{text-align:center;color:white;font-size:12px;padding:20px}
       <input id="email" type="email" placeholder="Enter your email">
     </div>
     <div class="field">
-      <label>Password</label>
-      <input id="password" type="password" placeholder="Enter password">
+  <div class="password-box">
+  <input
+    type="password"
+    id="password"
+    placeholder="Enter Password"
+    required
+  >
+  <button type="button" onclick="togglePassword()"
+    class="eye-btn" aria-label="Show password">
+    👁️
+  </button>
+</div>
+
+<style>
+.password-box {
+  position: relative;
+  width: 100%;
+}
+.password-box input {
+  width: 100%;
+  padding-right: 50px;
+  box-sizing: border-box;
+}
+.eye-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+}
+</style>
+
+<script>
+function togglePassword() {
+  const password = document.getElementById("password");
+  password.type =
+    password.type === "password" ? "text" : "password";
+}
+</script>
     </div>
     <button class="btn" style="width:100%;margin-top:12px" onclick="login()">
       Login to Dashboard
