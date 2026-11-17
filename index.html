@@ -257,7 +257,7 @@ footer{text-align:center;color:white;font-size:12px;padding:20px}
     👁️
   </button>
 </div>
-
+<a href="#" id="forgotBtn">Forgot Password?</a>
 <style>
 .password-box {
   position: relative;
@@ -286,7 +286,33 @@ function togglePassword() {
   password.type =
     password.type === "password" ? "text" : "password";
 }
-  
+document.getElementById("forgotBtn")?.addEventListener("click", async function(e) {
+    e.preventDefault();
+
+    const email = document.getElementById("email").value.trim();
+
+    if (!email) {
+        message("loginMessage", "Please enter your email first.");
+        return;
+    }
+
+    if (!db) {
+        message("loginMessage", "Database connection is not ready.");
+        return;
+    }
+
+    message("loginMessage", "Sending password reset email...");
+
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+        redirectTo: new URL("reset-password.html", window.location.href).href
+    });
+
+    if (error) {
+        message("loginMessage", "Error: " + error.message);
+    } else {
+        message("loginMessage", "Password reset link sent. Check your email.");
+    }
+});
 </script>
     </div>
     <button class="btn" style="width:100%;margin-top:12px" onclick="login()">
