@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stock Management | INDIAN MURI FACTORY</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:16px;font-family:Arial,sans-serif;color:white;
+ background:linear-gradient(135deg,#071b19,#123b32,#071b19);
+ min-height:100vh
+}
+.container{max-width:1150px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+h1{font-size:23px;margin:0}
+h2{font-size:19px;margin:0 0 15px}
+h3{font-size:15px;margin:0 0 8px}
+.sub{font-size:13px;color:#b9d5cc;margin-top:6px}
+.card{
+ background:#ffffff10;border:1px solid #ffffff24;
+ border-radius:16px;padding:18px;margin-bottom:18px
+}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.stat{background:#102e26;border:1px solid #31594d;border-radius:12px;padding:15px}
+.stat small{color:#b9d5cc}
+.stat strong{display:block;font-size:23px;margin-top:8px;overflow-wrap:anywhere}
+.stat span{font-size:12px;color:#b9d5cc}
+button{
+ padding:11px 15px;border:0;border-radius:9px;
+ font-weight:bold;cursor:pointer
+}
+.primary{background:#19bd7c;color:#06251b}
+.secondary{background:#31594d;color:white}
+input,select{
+ width:100%;padding:12px;border-radius:9px;
+ background:#102c26;color:white;border:1px solid #496e61;
+ font-size:14px
+}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.toolbar input{flex:1;min-width:180px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:12px;text-align:left;border-bottom:1px solid #34554b;font-size:13px}
+th{color:#9ce9bd}
+.good{color:#6ce7a4;font-weight:bold}
+.low{color:#ffcc70;font-weight:bold}
+.negative{color:#ff7777;font-weight:bold}
+.badge{display:inline-block;padding:5px 9px;border-radius:20px;background:#1c6548;font-size:11px}
+.badge.warn{background:#805c25;color:#fff1c7}
+.badge.bad{background:#782e2e;color:#ffe0e0}
+.notice{display:none;padding:12px;border-radius:9px;margin-bottom:14px;background:#713333}
+.muted{color:#b9d5cc;font-size:12px}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:500px){
+ body{padding:10px}.card{padding:13px}h1{font-size:19px}
+ .grid{grid-template-columns:1fr 1fr}
+ .stat{padding:11px}.stat strong{font-size:19px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+ <div>
+  <h1>🏭 INDIAN MURI FACTORY</h1>
+  <div class="sub">Stock Management System</div>
+ </div>
+ <div class="toolbar">
+  <button class="secondary" onclick="location.href='./index.html'">← Dashboard</button>
+  <button class="primary" onclick="loadAll()">↻ Refresh</button>
+ </div>
+</header>
+
+<div id="notice" class="notice"></div>
+
+<section class="card">
+ <h2>📊 Stock Overview</h2>
+ <div class="grid">
+  <div class="stat">
+   <small>Raw Material Types</small>
+   <strong id="materialTypes">0</strong>
+   <span>Different materials</span>
+  </div>
+  <div class="stat">
+   <small>Finished Product Types</small>
+   <strong id="productTypes">0</strong>
+   <span>Active stock products</span>
+  </div>
+  <div class="stat">
+   <small>Low / Negative Materials</small>
+   <strong id="lowCount">0</strong>
+   <span>Need attention</span>
+  </div>
+  <div class="stat">
+   <small>Total Finished Bags</small>
+   <strong id="totalBags">0</strong>
+   <span>All finished products</span>
+  </div>
+ </div>
+</section>
+
+<section class="card">
+ <div class="section-title">
+  <h2>🌾 Raw Material Stock</h2>
+  <span class="muted">Live balance from database</span>
+ </div>
+ <div class="toolbar">
+  <input id="materialSearch" placeholder="Search raw material..." oninput="renderMaterials()">
+ </div>
+ <div class="table-wrap">
+  <table>
+   <thead>
+    <tr>
+     <th>Material Name</th>
+     <th>Current Stock</th>
+     <th>Unit</th>
+     <th>Minimum Stock</th>
+     <th>Status</th>
+    </tr>
+   </thead>
+   <tbody id="materialRows">
+    <tr><td colspan="5">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
+
+<section class="card">
+ <div class="section-title">
+  <h2>📦 Finished Product Stock</h2>
+  <span class="muted">Live balance from database</span>
+ </div>
+ <div class="toolbar">
+  <input id="productSearch" placeholder="Search finished product..." oninput="renderProducts()">
+ </div>
+ <div class="table-wrap">
+  <table>
+   <thead>
+    <tr>
+     <th>Product Name</th>
+     <th>Type</th>
+     <th>Packet Weight</th>
+     <th>Current Bags</th>
+     <th>Total Weight</th>
+    </tr>
+   </thead>
+   <tbody id="productRows">
+    <tr><td colspan="5">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
+
+<section class="card">
+ <div class="section-title">
+  <h2>📜 Stock Movement History</h2>
+  <select id="movementFilter" style="max-width:190px" onchange="renderMovements()">
+   <option value="all">All Movements</option>
+   <option value="raw_material">Raw Materials</option>
+   <option value="finished_product">Finished Products</option>
+  </select>
+ </div>
+ <div class="toolbar">
+  <input id="movementSearch" placeholder="Search material, product or source..." oninput="renderMovements()">
+ </div>
+ <div class="table-wrap">
+  <table>
+   <thead>
+    <tr>
+     <th>Date</th>
+     <th>Item</th>
+     <th>Movement</th>
+     <th>Quantity</th>
+     <th>Unit</th>
+     <th>Source</th>
+     <th>Notes</th>
+    </tr>
+   </thead>
+   <tbody id="movementRows">
+    <tr><td colspan="7">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+ <p class="muted">Latest 100 stock movements are displayed.</p>
+</section>
+
+<p class="muted" style="text-align:center">
+ INDIAN MURI FACTORY · Stock records are calculated from stock movements.
+</p>
+
+</div>
+
+<script>
+let db;
+let materialStock=[];
+let finishedStock=[];
+let movements=[];
+let materialInfo=[];
+let productInfo=[];
+
+function safe(v){
+ return String(v??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function showError(message){
+ const el=document.getElementById("notice");
+ el.textContent=message;
+ el.style.display="block";
+}
+function clearError(){
+ document.getElementById("notice").style.display="none";
+}
+
+function formatNumber(value){
+ return Number(value||0).toLocaleString("en-IN",{maximumFractionDigits:3});
+}
+
+function formatDate(value){
+ if(!value)return "-";
+ const d=new Date(value);
+ return isNaN(d) ? safe(value) : d.toLocaleString("en-IN");
+}
+
+async function initialize(){
+ try{
+  if(!window.AFSONA_CONFIG)throw new Error("config.js not found");
+
+  db=window.supabase.createClient(
+   window.AFSONA_CONFIG.SUPABASE_URL,
+   window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  const {data:{session},error}=await db.auth.getSession();
+  if(error)throw error;
+  if(!session){location.href="./index.html";return;}
+
+  await loadAll();
+ }catch(e){
+  showError("Initialization Error: "+e.message);
+ }
+}
+
+async function loadAll(){
+ clearError();
+
+ try{
+  const results=await Promise.all([
+   db.from("raw_material_stock").select("*"),
+   db.from("finished_stock").select("*"),
+   db.from("stock_movements")
+     .select("id,movement_date,item_type,raw_material_id,product_id,quantity_change,unit,source_type,source_id,source_line_id,notes")
+     .order("movement_date",{ascending:false})
+     .limit(100),
+   db.from("raw_materials").select("id,material_name,minimum_stock,unit"),
+   db.from("finished_products").select("id,product_name,product_type,weight_kg,is_active")
+  ]);
+
+  const names=["Raw material stock","Finished stock","Stock movements","Raw materials","Finished products"];
+  results.forEach((r,i)=>{
+   if(r.error)throw new Error(names[i]+": "+r.error.message);
+  });
+
+  materialStock=results[0].data||[];
+  finishedStock=results[1].data||[];
+  movements=results[2].data||[];
+  materialInfo=results[3].data||[];
+  productInfo=results[4].data||[];
+
+  renderAll();
+ }catch(e){
+  showError("Could not load stock: "+e.message);
+ }
+}
+
+function renderAll(){
+ document.getElementById("materialTypes").textContent=materialStock.length;
+ document.getElementById("productTypes").textContent=finishedStock.length;
+
+ const low=materialStock.filter(m=>{
+  const info=materialInfo.find(x=>x.id===m.material_id);
+  const min=Number(info?.minimum_stock||0);
+  return Number(m.current_stock)<0 ||
+   (min>0 && Number(m.current_stock)<=min);
+ }).length;
+
+ document.getElementById("lowCount").textContent=low;
+
+ const bags=finishedStock.reduce((s,p)=>s+Number(p.current_bags||0),0);
+ document.getElementById("totalBags").textContent=formatNumber(bags);
+
+ renderMaterials();
+ renderProducts();
+ renderMovements();
+}
+
+function renderMaterials(){
+ const search=document.getElementById("materialSearch").value.toLowerCase();
+ const rows=materialStock.filter(m=>
+  String(m.material_name||"").toLowerCase().includes(search)
+ );
+
+ const tbody=document.getElementById("materialRows");
+ if(!rows.length){
+  tbody.innerHTML='<tr><td colspan="5">No raw materials found.</td></tr>';
+  return;
+ }
+
+ tbody.innerHTML=rows.map(m=>{
+  const info=materialInfo.find(x=>x.id===m.material_id);
+  const min=Number(info?.minimum_stock||0);
+  const qty=Number(m.current_stock||0);
+
+  let status='<span class="badge">Normal</span>';
+  let cls="good";
+
+  if(qty<0){
+   status='<span class="badge bad">Negative Stock</span>';
+   cls="negative";
+  }else if(min>0 && qty<=min){
+   status='<span class="badge warn">Low Stock</span>';
+   cls="low";
+  }
+
+  return `<tr>
+   <td>${safe(m.material_name)}</td>
+   <td class="${cls}">${formatNumber(qty)}</td>
+   <td>${safe(m.unit)}</td>
+   <td>${min>0?formatNumber(min):"-"}</td>
+   <td>${status}</td>
+  </tr>`;
+ }).join("");
+}
+
+function renderProducts(){
+ const search=document.getElementById("productSearch").value.toLowerCase();
+ const rows=finishedStock.filter(p=>
+  String(p.product_name||"").toLowerCase().includes(search) ||
+  String(p.product_type||"").toLowerCase().includes(search)
+ );
+
+ const tbody=document.getElementById("productRows");
+ if(!rows.length){
+  tbody.innerHTML='<tr><td colspan="5">No finished stock found.</td></tr>';
+  return;
+ }
+
+ tbody.innerHTML=rows.map(p=>`
+  <tr>
+   <td>${safe(p.product_name)}</td>
+   <td>${p.product_type==="white"?"White Muri":p.product_type==="color"?"Color Muri":safe(p.product_type)}</td>
+   <td>${formatNumber(p.weight_kg)} Kg</td>
+   <td class="${Number(p.current_bags)<0?"negative":"good"}">${formatNumber(p.current_bags)}</td>
+   <td>${formatNumber(p.current_weight_kg)} Kg</td>
+  </tr>
+ `).join("");
+}
+
+function renderMovements(){
+ const filter=document.getElementById("movementFilter").value;
+ const search=document.getElementById("movementSearch").value.toLowerCase();
+
+ const rows=movements.filter(m=>{
+  if(filter!=="all" && m.item_type!==filter)return false;
+
+  const info=m.item_type==="raw_material"
+   ? materialInfo.find(x=>x.id===m.raw_material_id)
+   : productInfo.find(x=>x.id===m.product_id);
+
+  const name=info?.material_name||info?.product_name||"";
+  const text=[
+   name,m.source_type,m.notes,m.unit,m.quantity_change
+  ].join(" ").toLowerCase();
+
+  return text.includes(search);
+ });
+
+ const tbody=document.getElementById("movementRows");
+
+ if(!rows.length){
+  tbody.innerHTML='<tr><td colspan="7">No stock movements found.</td></tr>';
+  return;
+ }
+
+ tbody.innerHTML=rows.map(m=>{
+  const info=m.item_type==="raw_material"
+   ? materialInfo.find(x=>x.id===m.raw_material_id)
+   : productInfo.find(x=>x.id===m.product_id);
+
+  const name=info?.material_name||info?.product_name||"Unknown item";
+  const qty=Number(m.quantity_change||0);
+  const movement=qty>0?"IN":qty<0?"OUT":"ZERO";
+
+  return `<tr>
+   <td>${formatDate(m.movement_date)}</td>
+   <td>${safe(name)}</td>
+   <td class="${qty<0?"negative":"good"}">${movement}</td>
+   <td class="${qty<0?"negative":"good"}">${qty>0?"+":""}${formatNumber(qty)}</td>
+   <td>${safe(m.unit)}</td>
+   <td>${safe(m.source_type)}</td>
+   <td>${safe(m.notes||"-")}</td>
+  </tr>`;
+ }).join("");
+}
+
+initialize();
+</script>
+</body>
+</html>
