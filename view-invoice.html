@@ -1,0 +1,214 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INDIAN MURI FACTORY - Invoice</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:18px;
+ font-family:Arial,sans-serif;
+ background:linear-gradient(135deg,#102b23,#1c4938,#071c18);
+ color:#fff;
+}
+.container{
+ max-width:850px;margin:20px auto;
+ background:#fff;color:#17251e;
+ border-radius:18px;padding:25px;
+ box-shadow:0 15px 50px #0005;
+}
+.header{text-align:center;border-bottom:2px solid #ddd;padding-bottom:15px}
+.header h1{margin:5px;color:#176b45}
+.header p{margin:5px;color:#555}
+h2{font-size:18px;color:#176b45;margin-top:25px}
+.info{
+ background:#f3f8f5;padding:15px;border-radius:10px;
+ line-height:1.8;overflow-wrap:anywhere;
+}
+table{width:100%;border-collapse:collapse;margin-top:12px}
+th,td{border:1px solid #ddd;padding:10px;text-align:left}
+th{background:#176b45;color:#fff}
+.total{text-align:right;font-size:22px;font-weight:bold;margin-top:20px}
+button{
+ border:0;padding:12px 20px;border-radius:9px;
+ background:#176b45;color:white;font-weight:bold;
+ margin:15px 5px 0 0;cursor:pointer;
+}
+#error{color:#b42318;text-align:center;padding:25px}
+#loading{text-align:center;padding:30px}
+@media(max-width:600px){
+ body{padding:8px}
+ .container{padding:14px;margin:5px auto}
+ th,td{padding:7px;font-size:12px}
+}
+@media print{
+ body{background:white;padding:0}
+ .container{box-shadow:none;margin:0;max-width:100%;border-radius:0}
+ .no-print{display:none!important}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+ <div id="loading">Loading Invoice...</div>
+ <div id="error" hidden></div>
+
+ <main id="invoice" hidden>
+  <div class="header">
+   <h1>INDIAN MURI FACTORY</h1>
+   <p>Sales Invoice</p>
+   <h2 id="invoiceNumber"></h2>
+   <p id="invoiceDate"></p>
+  </div>
+
+  <h2>Customer Details</h2>
+  <div class="info" id="customerInfo"></div>
+
+  <h2>Product Details</h2>
+  <div style="overflow-x:auto">
+   <table>
+    <thead>
+     <tr>
+      <th>Product</th>
+      <th>Weight</th>
+      <th>Bags</th>
+      <th>Rate</th>
+      <th>Amount</th>
+     </tr>
+    </thead>
+    <tbody id="items"></tbody>
+   </table>
+  </div>
+
+  <div class="total">
+   Grand Total: ₹<span id="grandTotal">0.00</span>
+  </div>
+
+  <div class="info" style="margin-top:20px">
+   <b>Invoice Status:</b> <span id="invoiceStatus"></span><br>
+   <b>Notes:</b> <span id="invoiceNotes"></span>
+  </div>
+
+  <div class="no-print" style="text-align:center">
+   <button onclick="window.print()">Print Invoice</button>
+  </div>
+ </main>
+</div>
+
+<script>
+(async function(){
+
+ const loading = document.getElementById("loading");
+ const invoice = document.getElementById("invoice");
+ const errorBox = document.getElementById("error");
+
+ function esc(value){
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+   "&":"&amp;","<":"&lt;",">":"&gt;",
+   '"':"&quot;","'":"&#39;"
+  }[c]));
+ }
+
+ function money(value){
+  return Number(value || 0).toLocaleString("en-IN",{
+   minimumFractionDigits:2,
+   maximumFractionDigits:2
+  });
+ }
+
+ function showError(message){
+  loading.hidden=true;
+  errorBox.hidden=false;
+  errorBox.textContent=message;
+ }
+
+ try{
+  if(!window.AFSONA_CONFIG ||
+     !window.AFSONA_CONFIG.SUPABASE_URL ||
+     !window.AFSONA_CONFIG.SUPABASE_ANON_KEY){
+   throw new Error("Website configuration not found.");
+  }
+
+  const token = new URLSearchParams(location.search).get("token");
+
+  if(!token || !/^[a-f0-9]{64}$/i.test(token)){
+   throw new Error("Invalid Invoice QR Link.");
+  }
+
+  const client = window.supabase.createClient(
+   window.AFSONA_CONFIG.SUPABASE_URL,
+   window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  const {data,error} = await client.rpc(
+   "get_invoice_by_qr",
+   {p_token_hash:token}
+  );
+
+  if(error) throw error;
+  if(!data || data.success !== true){
+   throw new Error(data?.message || "Invoice not available.");
+  }
+
+  const s=data.invoice;
+  const c=data.customer;
+  const items=data.items || [];
+
+  document.getElementById("invoiceNumber").textContent =
+   "Invoice: "+s.invoice_number;
+
+  document.getElementById("invoiceDate").textContent =
+   "Date: "+s.invoice_date;
+
+  document.getElementById("customerInfo").innerHTML=`
+   <b>Name:</b> ${esc(c.customer_name)}<br>
+   <b>Shop:</b> ${esc(c.shop_name)}<br>
+   <b>Mobile:</b> ${esc(c.mobile)}<br>
+   <b>WhatsApp:</b> ${esc(c.whatsapp)}<br>
+   <b>Village:</b> ${esc(c.village)}<br>
+   <b>Post Office:</b> ${esc(c.post_office)}<br>
+   <b>Police Station:</b> ${esc(c.police_station)}<br>
+   <b>District:</b> ${esc(c.district)}<br>
+   <b>State:</b> ${esc(c.state)}<br>
+   <b>PIN:</b> ${esc(c.pin_code)}<br>
+   <b>Address:</b> ${esc(c.address)}
+  `;
+
+  document.getElementById("items").innerHTML=items.map(item=>`
+   <tr>
+    <td>${esc(item.product_name)} (${esc(item.product_type)})</td>
+    <td>${esc(item.weight_kg)} Kg</td>
+    <td>${esc(item.quantity_bags)}</td>
+    <td>₹${money(item.unit_price)}</td>
+    <td>₹${money(item.line_total)}</td>
+   </tr>
+  `).join("");
+
+  document.getElementById("grandTotal").textContent =
+   money(s.total_amount);
+
+  document.getElementById("invoiceStatus").textContent =
+   s.status;
+
+  document.getElementById("invoiceNotes").textContent =
+   s.notes || "No notes";
+
+  loading.hidden=true;
+  invoice.hidden=false;
+
+ }catch(err){
+  console.error(err);
+  showError(err.message || "Unable to load Invoice.");
+ }
+
+})();
+</script>
+</body>
+</html>
