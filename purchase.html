@@ -103,6 +103,37 @@ th,td{
 
  <h2 style="margin-top:25px">Raw Material Details</h2>
 
+ 
+<button type="button" id="showMaterialForm">
+  + Add New Raw Material
+</button>
+
+<div id="newMaterialForm" style="display:none;padding:15px;margin-top:12px;background:#ffffff15;border-radius:12px">
+  <h3>Add Raw Material</h3>
+
+  <label>Raw Material Name</label>
+  <input id="newMaterialName" placeholder="Example: Paddy">
+
+  <label>Unit</label>
+  <select id="newMaterialUnit">
+    <option value="Kg">Kg</option>
+    <option value="Bag">Bag</option>
+    <option value="Piece">Piece</option>
+    <option value="Litre">Litre</option>
+    <option value="Quintal">Quintal</option>
+  </select>
+
+  <label>Opening Stock</label>
+  <input id="newMaterialStock" type="number" min="0" step="0.001" value="0">
+
+  <label>Minimum Stock</label>
+  <input id="newMaterialMinimum" type="number" min="0" step="0.001" value="0">
+
+  <button type="button" id="saveNewMaterial">Save Raw Material</button>
+  <button type="button" id="cancelMaterial" style="background:#536b70">Cancel</button>
+</div>
+ 
+
  <label>Raw Material Name</label>
  <select id="material">
   <option value="">Loading materials...</option>
@@ -500,6 +531,57 @@ $("refreshHistory").addEventListener("click",async function(){
  }
 });
 
+$("showMaterialForm").addEventListener("click", () => {
+  $("newMaterialForm").style.display = "block";
+});
+
+$("cancelMaterial").addEventListener("click", () => {
+  $("newMaterialForm").style.display = "none";
+});
+
+$("saveNewMaterial").addEventListener("click", async () => {
+  const name = $("newMaterialName").value.trim();
+  const unit = $("newMaterialUnit").value;
+  const opening = Number($("newMaterialStock").value || 0);
+  const minimum = Number($("newMaterialMinimum").value || 0);
+
+  if (!name) return message("Enter Raw Material Name.", true);
+  if (opening < 0 || minimum < 0)
+    return message("Stock cannot be negative.", true);
+
+  const button = $("saveNewMaterial");
+  button.disabled = true;
+
+  try {
+    const { data, error } = await db
+      .from("raw_materials")
+      .insert({
+        material_name: name,
+        unit: unit,
+        opening_stock: opening,
+        minimum_stock: minimum
+      })
+      .select("id")
+      .single();
+
+    if (error) throw error;
+
+    await loadMaterials();
+    $("material").value = data.id;
+    $("unit").value = unit;
+    $("newMaterialName").value = "";
+    $("newMaterialStock").value = "0";
+    $("newMaterialMinimum").value = "0";
+    $("newMaterialForm").style.display = "none";
+
+    message("Raw Material added successfully.");
+  } catch (error) {
+    message("Could not add Raw Material: " + error.message, true);
+  } finally {
+    button.disabled = false;
+  }
+});
+ 
 initialize().catch(error=>{
  message("ERROR: " + error.message,true);
 });
