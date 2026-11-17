@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales & Invoices | INDIAN MURI FACTORY</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="./config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:18px;font-family:Arial,sans-serif;color:#eaf8ef;
+ background:linear-gradient(135deg,#071d17,#164a35,#09271d);
+ min-height:100vh
+}
+.container{max-width:1100px;margin:auto}
+header{
+ display:flex;justify-content:space-between;align-items:center;
+ gap:12px;flex-wrap:wrap;margin-bottom:20px
+}
+h1{font-size:25px;margin:0}
+header p{color:#b8d8c5;margin:6px 0}
+.panel{
+ background:#ffffff12;border:1px solid #ffffff2b;
+ border-radius:16px;padding:20px;margin-bottom:18px;
+ backdrop-filter:blur(12px)
+}
+h2{font-size:19px;margin:0 0 15px;color:#b9f4ce}
+label{display:block;font-size:13px;margin:12px 0 6px;color:#d7eee0}
+input,select,textarea{
+ width:100%;padding:12px;border-radius:9px;
+ border:1px solid #ffffff40;background:#102e24;
+ color:white;font-size:15px;outline:none
+}
+textarea{min-height:65px;resize:vertical}
+button{
+ border:0;border-radius:9px;padding:12px 16px;
+ background:#27a765;color:white;font-weight:bold;
+ cursor:pointer;font-size:14px;margin:5px 3px 0 0
+}
+button.secondary{background:#355e4c}
+button.danger{background:#a33e3e}
+button:disabled{opacity:.5;cursor:not-allowed}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:11px;border-bottom:1px solid #ffffff25;text-align:left}
+th{color:#b9f4ce}
+td input{min-width:90px}
+.total{text-align:right;font-size:24px;font-weight:bold;margin-top:18px}
+.muted{color:#b9d3c2;font-size:13px}
+#message{padding:12px;border-radius:9px;margin:12px 0;display:none}
+#message.error{display:block;background:#7d2929}
+#message.success{display:block;background:#145c39}
+#invoiceResult{
+ background:white;color:#15231b;border-radius:14px;
+ padding:22px;margin-top:20px;display:none
+}
+.invoice-head{text-align:center;border-bottom:2px solid #ddd;padding-bottom:12px}
+.invoice-head h2{color:#176b45}
+.invoice-info{background:#f2f7f3;padding:12px;border-radius:8px;color:#17251e;line-height:1.8;margin:12px 0}
+.invoice-table{min-width:0;color:#17251e}
+.invoice-table th{background:#176b45;color:white}
+.invoice-table td,.invoice-table th{border:1px solid #ddd}
+.invoice-total{text-align:right;font-size:22px;font-weight:bold;color:#176b45;margin-top:15px}
+#qrBox{display:flex;flex-direction:column;align-items:center;margin:18px auto;text-align:center;gap:8px}
+#qrCanvas{padding:10px;background:white;border:1px solid #ddd}
+#qrBox p{color:#444;font-size:12px;overflow-wrap:anywhere}
+.invoice-actions{text-align:center}
+@media(max-width:650px){
+ body{padding:10px}
+ .panel{padding:14px}
+ .grid{grid-template-columns:1fr}
+ h1{font-size:21px}
+}
+@media print{
+ body{background:white;color:#111;padding:0}
+ header,.form-area,.history-area,.no-print,#message{display:none!important}
+ .container{max-width:100%}
+ #invoiceResult{display:block!important;margin:0;padding:12px}
+ #invoiceResult .invoice-table{min-width:0}
+ #qrBox{break-inside:avoid}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+ <div>
+  <h1>INDIAN MURI FACTORY</h1>
+  <p>Sales & Invoices Management</p>
+ </div>
+ <button class="secondary" onclick="location.href='./index.html'">← Dashboard</button>
+</header>
+
+<div id="message"></div>
+
+<section class="panel form-area">
+ <h2>Create Sales Invoice</h2>
+
+ <div class="grid">
+  <div>
+   <label>Customer</label>
+   <select id="customer">
+    <option value="">Loading customers...</option>
+   </select>
+  </div>
+  <div>
+   <label>Invoice Date</label>
+   <input type="date" id="invoiceDate">
+  </div>
+ </div>
+
+ <label>Invoice Notes</label>
+ <textarea id="notes" placeholder="Optional notes"></textarea>
+
+ <h2 style="margin-top:25px">Products</h2>
+
+ <div class="grid">
+  <div>
+   <label>Select Finished Product</label>
+   <select id="product">
+    <option value="">Loading products...</option>
+   </select>
+  </div>
+  <div>
+   <label>Available Stock</label>
+   <input id="availableStock" readonly placeholder="Select product">
+  </div>
+  <div>
+   <label>Quantity (Bags)</label>
+   <input type="number" id="quantity" min="1" step="1" placeholder="Enter bags">
+  </div>
+  <div>
+   <label>Selling Price Per Bag (₹)</label>
+   <input type="number" id="price" min="0" step="0.01" placeholder="Enter rate">
+  </div>
+ </div>
+
+ <button type="button" onclick="addItem()">+ Add Product to Invoice</button>
+
+ <div class="table-wrap" style="margin-top:18px">
+  <table>
+   <thead>
+    <tr>
+     <th>Product</th>
+     <th>Weight</th>
+     <th>Bags</th>
+     <th>Rate</th>
+     <th>Amount</th>
+     <th>Action</th>
+    </tr>
+   </thead>
+   <tbody id="cart">
+    <tr><td colspan="6" class="muted">No products added.</td></tr>
+   </tbody>
+  </table>
+ </div>
+
+ <div class="total">Total: ₹<span id="total">0.00</span></div>
+ <p class="muted">Stock is reduced only after the invoice is successfully saved.</p>
+
+ <button id="saveBtn" onclick="saveInvoice()">Save Invoice & Generate QR</button>
+</section>
+
+<section class="panel history-area">
+ <h2>Invoice History</h2>
+ <p class="muted">Latest saved invoices</p>
+ <button class="secondary" onclick="loadHistory()">Refresh History</button>
+ <div class="table-wrap" style="margin-top:12px">
+  <table>
+   <thead>
+    <tr>
+     <th>Invoice No.</th>
+     <th>Date</th>
+     <th>Total</th>
+     <th>Status</th>
+    </tr>
+   </thead>
+   <tbody id="history">
+    <tr><td colspan="4">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
+
+<section id="invoiceResult">
+ <div class="invoice-head">
+  <h2>INDIAN MURI FACTORY</h2>
+  <p>SALES INVOICE</p>
+  <b id="resultNumber"></b><br>
+  <span id="resultDate"></span>
+ </div>
+
+ <h3>Customer Details</h3>
+ <div class="invoice-info" id="resultCustomer"></div>
+
+ <h3>Product Details</h3>
+ <div class="table-wrap">
+  <table class="invoice-table">
+   <thead>
+    <tr>
+     <th>Product</th><th>Weight</th><th>Bags</th>
+     <th>Rate</th><th>Amount</th>
+    </tr>
+   </thead>
+   <tbody id="resultItems"></tbody>
+  </table>
+ </div>
+
+ <div class="invoice-total">
+  Grand Total: ₹<span id="resultTotal"></span>
+ </div>
+
+ <div class="invoice-info">
+  <b>Payment Status:</b> Not recorded on this invoice<br>
+  <b>Notes:</b> <span id="resultNotes"></span>
+ </div>
+
+ <div id="qrBox">
+  <div id="qrCanvas"></div>
+  <b>Scan to view this invoice</b>
+  <p id="qrLink"></p>
+ </div>
+
+ <div class="invoice-actions no-print">
+  <button onclick="window.print()">Print Invoice with QR</button>
+  <button onclick="shareInvoice()">Share Invoice on WhatsApp</button>
+ </div>
+</section>
+
+</div>
+
+<script>
+const CONFIG=window.AFSONA_CONFIG;
+if(!CONFIG || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY){
+ alert("Supabase configuration missing. Check config.js");
+ throw new Error("Supabase configuration missing");
+}
+
+const db=window.supabase.createClient(
+ CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY
+);
+
+let customers=[];
+let products=[];
+let cart=[];
+let lastInvoiceLink="";
+let lastInvoiceNumber="";
+let lastInvoiceTotal=0;
+let lastCustomer=null;
+
+const $=id=>document.getElementById(id);
+
+function money(n){
+ return Number(n||0).toLocaleString("en-IN",{
+  minimumFractionDigits:2,maximumFractionDigits:2
+ });
+}
+function esc(s){
+ return String(s??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",
+  '"':"&quot;","'":"&#39;"
+ }[c]));
+}
+function message(text,type="success"){
+ $("message").className=type;
+ $("message").textContent=text;
+ $("message").style.display="block";
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+function hideMessage(){
+ $("message").style.display="none";
+}
+
+function today(){
+ const d=new Date();
+ return [
+  d.getFullYear(),
+  String(d.getMonth()+1).padStart(2,"0"),
+  String(d.getDate()).padStart(2,"0")
+ ].join("-");
+}
+
+async function loadCustomers(){
+ const {data,error}=await db.from("customers")
+  .select("id,customer_name,shop_name,mobile,whatsapp,village,post_office,police_station,district,state,pin_code,full_address,address")
+  .order("customer_name");
+
+ if(error) throw error;
+ customers=data||[];
+
+ $("customer").innerHTML='<option value="">Select Customer</option>'+
+ customers.map(c=>
+  `<option value="${c.id}">${esc(c.customer_name)}${c.shop_name?" - "+esc(c.shop_name):""} (${esc(c.mobile)})</option>`
+ ).join("");
+}
+
+async function loadProducts(){
+ const [productResult,stockResult]=await Promise.all([
+  db.from("finished_products")
+   .select("id,product_name,product_type,weight_kg,is_active")
+   .eq("is_active",true)
+   .order("product_name"),
+  db.from("finished_stock")
+   .select("product_id,current_bags,current_weight_kg")
+ ]);
+
+ if(productResult.error) throw productResult.error;
+ if(stockResult.error) throw stockResult.error;
+
+ const stockMap={};
+ (stockResult.data||[]).forEach(s=>stockMap[s.product_id]=s);
+
+ products=(productResult.data||[]).map(p=>({
+  ...p,
+  current_bags:Number(stockMap[p.id]?.current_bags||0),
+  current_weight_kg:Number(stockMap[p.id]?.current_weight_kg||0)
+ }));
+
+ $("product").innerHTML='<option value="">Select Product</option>'+
+ products.map(p=>
+  `<option value="${p.id}">${esc(p.product_name)} - ${esc(p.product_type)} - ${p.weight_kg} Kg</option>`
+ ).join("");
+}
+
+function updateAvailable(){
+ const p=products.find(x=>x.id===$("product").value);
+ $("availableStock").value=p?
+  `${p.current_bags} Bags / ${p.current_weight_kg} Kg`:"";
+}
+$("product").addEventListener("change",updateAvailable);
+
+function addItem(){
+ hideMessage();
+ const p=products.find(x=>x.id===$("product").value);
+ const qty=Number($("quantity").value);
+ const price=Number($("price").value);
+
+ if(!p) return message("Please select a product.","error");
+ if(!Number.isInteger(qty)||qty<=0)
+  return message("Enter a valid whole number of bags.","error");
+ if(!Number.isFinite(price)||price<0)
+  return message("Enter a valid selling price.","error");
+
+ const already=cart.filter(x=>x.product_id===p.id)
+  .reduce((sum,x)=>sum+x.quantity_bags,0);
+
+ if((already+qty)>p.current_bags)
+  return message("Quantity exceeds available stock.","error");
+
+ cart.push({
+  product_id:p.id,
+  product_name:p.product_name,
+  product_type:p.product_type,
+  weight_kg:Number(p.weight_kg),
+  quantity_bags:qty,
+  unit_price:price,
+  line_total:qty*price
+ });
+
+ $("quantity").value="";
+ $("price").value="";
+ renderCart();
+}
+
+function removeItem(index){
+ cart.splice(index,1);
+ renderCart();
+}
+
+function renderCart(){
+ if(!cart.length){
+  $("cart").innerHTML='<tr><td colspan="6">No products added.</td></tr>';
+ }else{
+  $("cart").innerHTML=cart.map((x,i)=>`
+   <tr>
+    <td>${esc(x.product_name)} (${esc(x.product_type)})</td>
+    <td>${x.weight_kg} Kg</td>
+    <td>${x.quantity_bags}</td>
+    <td>₹${money(x.unit_price)}</td>
+    <td>₹${money(x.line_total)}</td>
+    <td><button class="danger" onclick="removeItem(${i})">Remove</button></td>
+   </tr>
+  `).join("");
+ }
+ $("total").textContent=money(cart.reduce((s,x)=>s+x.line_total,0));
+}
+
+function randomToken(){
+ const bytes=new Uint8Array(32);
+ crypto.getRandomValues(bytes);
+ return Array.from(bytes,b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function sha256(value){
+ const bytes=new TextEncoder().encode(value);
+ const hash=await crypto.subtle.digest("SHA-256",bytes);
+ return Array.from(new Uint8Array(hash),b=>
+  b.toString(16).padStart(2,"0")
+ ).join("");
+}
+
+async function saveInvoice(){
+ hideMessage();
+
+ if(!window.crypto?.subtle || !window.crypto?.getRandomValues){
+  return message("Secure QR generation requires HTTPS. Open the GitHub Pages website.","error");
+ }
+
+ const customer=customers.find(c=>c.id===$("customer").value);
+ if(!customer) return message("Please select a customer.","error");
+ if(!cart.length) return message("Please add at least one product.","error");
+
+ const date=$("invoiceDate").value;
+ if(!date) return message("Please select invoice date.","error");
+
+ const btn=$("saveBtn");
+ btn.disabled=true;
+ btn.textContent="Saving Invoice...";
+
+ try{
+  const rawToken=randomToken();
+  const tokenHash=await sha256(rawToken);
+
+  const items=cart.map(x=>({
+   product_id:x.product_id,
+   quantity_bags:x.quantity_bags,
+   unit_price:x.unit_price
+  }));
+
+  const {data,error}=await db.rpc("create_factory_sale",{
+   p_customer_id:customer.id,
+   p_invoice_date:date,
+   p_notes:$("notes").value.trim()||null,
+   p_items:items,
+   p_token_hash:tokenHash
+  });
+
+  if(error) throw error;
+  if(!data?.success) throw new Error("Invoice could not be saved.");
+
+  lastInvoiceNumber=data.invoice_number;
+  lastInvoiceTotal=Number(data.total_amount);
+  lastCustomer=customer;
+
+  // QR URL contains the random secret, never customer data
+  lastInvoiceLink=new URL(
+   "./view-invoice.html?token="+encodeURIComponent(rawToken),
+   location.href
+  ).href;
+
+  showSavedInvoice(data,customer,cart.slice(),lastInvoiceLink);
+
+  cart=[];
+  renderCart();
+  $("notes").value="";
+  await loadProducts();
+  await loadHistory();
+
+  message("Invoice saved successfully. QR Code generated.","success");
+
+ }catch(error){
+  console.error(error);
+  message(error.message||"Unable to save invoice.","error");
+ }finally{
+  btn.disabled=false;
+  btn.textContent="Save Invoice & Generate QR";
+ }
+}
+
+function showSavedInvoice(data,customer,items,link){
+ $("resultNumber").textContent="Invoice: "+data.invoice_number;
+ $("resultDate").textContent="Date: "+$("invoiceDate").value;
+
+ $("resultCustomer").innerHTML=`
+  <b>Name:</b> ${esc(customer.customer_name)}<br>
+  <b>Shop:</b> ${esc(customer.shop_name)}<br>
+  <b>Mobile:</b> ${esc(customer.mobile)}<br>
+  <b>WhatsApp:</b> ${esc(customer.whatsapp)}<br>
+  <b>Village:</b> ${esc(customer.village)}<br>
+  <b>Post Office:</b> ${esc(customer.post_office)}<br>
+  <b>Police Station:</b> ${esc(customer.police_station)}<br>
+  <b>District:</b> ${esc(customer.district)}<br>
+  <b>State:</b> ${esc(customer.state)}<br>
+  <b>PIN:</b> ${esc(customer.pin_code)}<br>
+  <b>Address:</b> ${esc(customer.full_address||customer.address)}
+ `;
+
+ $("resultItems").innerHTML=items.map(x=>`
+  <tr>
+   <td>${esc(x.product_name)} (${esc(x.product_type)})</td>
+   <td>${x.weight_kg} Kg</td>
+   <td>${x.quantity_bags}</td>
+   <td>₹${money(x.unit_price)}</td>
+   <td>₹${money(x.line_total)}</td>
+  </tr>
+ `).join("");
+
+ $("resultTotal").textContent=money(data.total_amount);
+ $("resultNotes").textContent=$("notes").value.trim()||"None";
+ $("qrCanvas").innerHTML="";
+
+ new QRCode($("qrCanvas"),{
+  text:link,
+  width:180,
+  height:180,
+  correctLevel:QRCode.CorrectLevel.M
+ });
+
+ $("qrLink").textContent=link;
+ $("invoiceResult").style.display="block";
+ $("invoiceResult").scrollIntoView({behavior:"smooth"});
+}
+
+async function loadHistory(){
+ const {data,error}=await db.from("sales")
+  .select("id,invoice_number,invoice_date,total_amount,status")
+  .order("created_at",{ascending:false})
+  .limit(30);
+
+ if(error){
+  $("history").innerHTML=
+   `<tr><td colspan="4">${esc(error.message)}</td></tr>`;
+  return;
+ }
+
+ $("history").innerHTML=(data||[]).map(s=>`
+  <tr>
+   <td>${esc(s.invoice_number)}</td>
+   <td>${esc(s.invoice_date)}</td>
+   <td>₹${money(s.total_amount)}</td>
+   <td>${esc(s.status)}</td>
+  </tr>
+ `).join("")||'<tr><td colspan="4">No invoices yet.</td></tr>';
+}
+
+function shareInvoice(){
+ if(!lastInvoiceLink||!lastCustomer){
+  return message("No invoice link available.","error");
+ }
+
+ const phone=String(lastCustomer.whatsapp||lastCustomer.mobile||"")
+  .replace(/\D/g,"");
+
+ const text=
+  `INDIAN MURI FACTORY\nInvoice: ${lastInvoiceNumber}\n`+
+  `Total: ₹${money(lastInvoiceTotal)}\n`+
+  `View your invoice and scan QR details:\n${lastInvoiceLink}`;
+
+ const url=phone?
+  `https://wa.me/${phone}?text=${encodeURIComponent(text)}`:
+  `https://wa.me/?text=${encodeURIComponent(text)}`;
+
+ window.open(url,"_blank");
+}
+
+async function start(){
+ $("invoiceDate").value=today();
+
+ try{
+  const {data:{session},error}=await db.auth.getSession();
+  if(error) throw error;
+  if(!session){
+   message("Please login to your Admin account first.","error");
+   return;
+  }
+
+  await Promise.all([loadCustomers(),loadProducts()]);
+  await loadHistory();
+
+ }catch(error){
+  console.error(error);
+  message(error.message||"Unable to load Sales page.","error");
+ }
+}
+
+start();
+</script>
+</body>
+</html>
