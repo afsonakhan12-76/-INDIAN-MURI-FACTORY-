@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Production Management | INDIAN MURI FACTORY</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;font-family:Arial,sans-serif;color:#fff;
+ background:linear-gradient(135deg,#071b19,#123b32,#071b19);
+ min-height:100vh;padding:18px;
+}
+.container{max-width:1100px;margin:auto}
+header{
+ display:flex;justify-content:space-between;align-items:center;
+ gap:12px;flex-wrap:wrap;margin-bottom:22px
+}
+h1{font-size:24px;margin:0}
+.sub{color:#b9d5cc;font-size:13px;margin-top:6px}
+.card{
+ background:rgba(255,255,255,.09);
+ border:1px solid rgba(255,255,255,.15);
+ border-radius:17px;padding:18px;margin-bottom:18px;
+ backdrop-filter:blur(12px)
+}
+h2{font-size:19px;margin:0 0 16px}
+h3{font-size:15px;margin:0 0 12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+label{display:block;font-size:13px;color:#d8e9e3;margin-bottom:7px}
+input,select,textarea{
+ width:100%;padding:12px;border-radius:9px;
+ border:1px solid #496e61;background:#102c26;
+ color:white;font-size:15px;outline:none
+}
+input:focus,select:focus,textarea:focus{border-color:#65e6a4}
+option{background:#102c26;color:white}
+button{
+ border:0;border-radius:9px;padding:12px 16px;
+ font-weight:bold;cursor:pointer;font-size:14px
+}
+.primary{background:#18b978;color:#06251a}
+.secondary{background:#31594d;color:white}
+.danger{background:#a93c3c;color:white;padding:8px 12px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}
+.item{
+ background:rgba(0,0,0,.18);padding:14px;
+ border:1px solid rgba(255,255,255,.12);
+ border-radius:12px;margin-bottom:12px
+}
+.item-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{
+ background:#102e26;border-radius:12px;padding:15px;
+ border:1px solid #31594d
+}
+.stat small{color:#b9d5cc}
+.stat strong{display:block;font-size:21px;margin-top:7px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:11px;border-bottom:1px solid #34554b;text-align:left;font-size:13px}
+th{color:#9ce9bd}
+.status{color:#69e5a5;font-weight:bold}
+.notice{padding:12px;border-radius:9px;margin-bottom:14px;display:none}
+.error{background:#692e2e;color:#ffdada}
+.success{background:#15583e;color:#d6ffe9}
+.muted{color:#a8c7bc;font-size:12px}
+@media(max-width:650px){
+ body{padding:10px}
+ .grid{grid-template-columns:1fr}
+ .summary{grid-template-columns:1fr}
+ h1{font-size:19px}
+ .card{padding:14px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+ <div>
+  <h1>🏭 INDIAN MURI FACTORY</h1>
+  <div class="sub">Production Management System</div>
+ </div>
+ <button class="secondary" onclick="goDashboard()">← Dashboard</button>
+</header>
+
+<div id="notice" class="notice"></div>
+
+<section class="card">
+ <h2>Production Information</h2>
+ <div class="grid">
+  <div>
+   <label>Production Date</label>
+   <input type="date" id="productionDate">
+  </div>
+  <div>
+   <label>Batch Number</label>
+   <input type="text" id="batchNumber" readonly value="Automatic">
+  </div>
+ </div>
+ <div style="margin-top:13px">
+  <label>Production Notes</label>
+  <textarea id="notes" rows="2" placeholder="Enter production notes"></textarea>
+ </div>
+</section>
+
+<section class="card">
+ <div class="item-head">
+  <h2>Raw Material Inputs</h2>
+  <button class="primary" onclick="addInput()">+ Add Material</button>
+ </div>
+ <div id="inputs"></div>
+</section>
+
+<section class="card">
+ <div class="item-head">
+  <h2>Finished Product Outputs</h2>
+  <button class="primary" onclick="addOutput()">+ Add Product</button>
+ </div>
+ <div id="outputs"></div>
+</section>
+
+<section class="card">
+ <h2>Production Summary</h2>
+ <div class="summary">
+  <div class="stat">
+   <small>Total Raw Material Entries</small>
+   <strong id="inputCount">0</strong>
+  </div>
+  <div class="stat">
+   <small>Total Bags Produced</small>
+   <strong id="bagTotal">0</strong>
+  </div>
+  <div class="stat">
+   <small>Total Output Weight</small>
+   <strong id="weightTotal">0.00 Kg</strong>
+  </div>
+ </div>
+ <div class="actions">
+  <button class="primary" id="saveBtn" onclick="saveProduction()">Save Production</button>
+  <button class="secondary" onclick="resetForm()">Clear Form</button>
+ </div>
+ <p class="muted">
+  Saving production will reduce raw material stock and increase finished product stock.
+ </p>
+</section>
+
+<section class="card">
+ <h2>Production History</h2>
+ <button class="secondary" onclick="loadHistory()" style="margin-bottom:13px">↻ Refresh History</button>
+ <div class="table-wrap">
+  <table>
+   <thead>
+    <tr>
+     <th>Date</th>
+     <th>Batch Number</th>
+     <th>Total Bags</th>
+     <th>Total Weight</th>
+     <th>Status</th>
+    </tr>
+   </thead>
+   <tbody id="history">
+    <tr><td colspan="5">Loading...</td></tr>
+   </tbody>
+  </table>
+ </div>
+</section>
+
+</div>
+
+<script>
+let db;
+let materials=[];
+let products=[];
+let inputCounter=0;
+let outputCounter=0;
+let saving=false;
+
+function showNotice(message,type="error"){
+ const box=document.getElementById("notice");
+ box.textContent=message;
+ box.className="notice "+type;
+ box.style.display="block";
+ window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function hideNotice(){
+ document.getElementById("notice").style.display="none";
+}
+
+function goDashboard(){
+ window.location.href="./index.html";
+}
+
+function today(){
+ const d=new Date();
+ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function escapeHTML(value){
+ return String(value ?? "").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function createBatchPreview(){
+ const d=document.getElementById("productionDate").value || today();
+ document.getElementById("batchNumber").value=
+ "PRO-"+d.replaceAll("-","")+"-AUTO";
+}
+
+async function initialize(){
+ try{
+  if(!window.AFSONA_CONFIG ||
+     !window.AFSONA_CONFIG.SUPABASE_URL ||
+     !window.AFSONA_CONFIG.SUPABASE_ANON_KEY){
+   throw new Error("Supabase configuration not found. Check config.js");
+  }
+
+  db=window.supabase.createClient(
+   window.AFSONA_CONFIG.SUPABASE_URL,
+   window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  const {data:{session},error:sessionError}=await db.auth.getSession();
+  if(sessionError) throw sessionError;
+
+  if(!session){
+   window.location.href="./index.html";
+   return;
+  }
+
+  document.getElementById("productionDate").value=today();
+  createBatchPreview();
+
+  await loadMaterials();
+  await loadProducts();
+  addInput();
+  addOutput();
+  await loadHistory();
+
+ }catch(error){
+  showNotice("Initialization Error: "+error.message);
+ }
+}
+
+async function loadMaterials(){
+ const {data,error}=await db
+  .from("raw_materials")
+  .select("id,material_name,unit")
+  .order("material_name");
+
+ if(error) throw error;
+ materials=data||[];
+}
+
+async function loadProducts(){
+ const {data,error}=await db
+  .from("finished_products")
+  .select("id,product_name,product_type,weight_kg,is_active")
+  .eq("is_active",true)
+  .order("product_name");
+
+ if(error) throw error;
+ products=data||[];
+}
+
+function materialOptions(){
+ if(!materials.length)
+  return '<option value="">No raw materials found</option>';
+
+ return '<option value="">Select Raw Material</option>'+
+ materials.map(m=>
+  `<option value="${escapeHTML(m.id)}" data-unit="${escapeHTML(m.unit)}">
+   ${escapeHTML(m.material_name)} (${escapeHTML(m.unit)})
+  </option>`
+ ).join("");
+}
+
+function productOptions(){
+ if(!products.length)
+  return '<option value="">No active products found</option>';
+
+ return '<option value="">Select Finished Product</option>'+
+ products.map(p=>
+  `<option value="${escapeHTML(p.id)}">
+   ${escapeHTML(p.product_name)} - ${escapeHTML(p.product_type)} - ${p.weight_kg} Kg
+  </option>`
+ ).join("");
+}
+
+function addInput(){
+ const id=++inputCounter;
+ const div=document.createElement("div");
+ div.className="item";
+ div.id="input-"+id;
+
+ div.innerHTML=`
+  <div class="item-head">
+   <h3>Raw Material #${id}</h3>
+   <button class="danger" onclick="removeInput(${id})">Remove</button>
+  </div>
+  <div class="grid">
+   <div>
+    <label>Raw Material Name</label>
+    <select class="material-select" onchange="setMaterialUnit(${id})">
+     ${materialOptions()}
+    </select>
+   </div>
+   <div>
+    <label>Quantity Used</label>
+    <input class="material-qty" type="number" min="0.001" step="any"
+     placeholder="Enter quantity" oninput="updateSummary()">
+   </div>
+   <div>
+    <label>Unit</label>
+    <input class="material-unit" type="text" readonly placeholder="Automatic">
+   </div>
+  </div>
+ `;
+ document.getElementById("inputs").appendChild(div);
+ updateSummary();
+}
+
+function setMaterialUnit(id){
+ const row=document.getElementById("input-"+id);
+ const select=row.querySelector(".material-select");
+ const option=select.options[select.selectedIndex];
+ row.querySelector(".material-unit").value=
+  option ? option.dataset.unit||"" : "";
+}
+
+function removeInput(id){
+ const el=document.getElementById("input-"+id);
+ if(el) el.remove();
+ updateSummary();
+}
+
+function addOutput(){
+ const id=++outputCounter;
+ const div=document.createElement("div");
+ div.className="item";
+ div.id="output-"+id;
+
+ div.innerHTML=`
+  <div class="item-head">
+   <h3>Finished Product #${id}</h3>
+   <button class="danger" onclick="removeOutput(${id})">Remove</button>
+  </div>
+  <div class="grid">
+   <div>
+    <label>Finished Product</label>
+    <select class="product-select" onchange="updateSummary()">
+     ${productOptions()}
+    </select>
+   </div>
+   <div>
+    <label>Bags Produced</label>
+    <input class="bags" type="number" min="1" step="1"
+     placeholder="Number of bags" oninput="updateSummary()">
+   </div>
+   <div>
+    <label>Total Weight (Kg)</label>
+    <input class="weight" type="number" min="0.001" step="any"
+     placeholder="Total weight in Kg" oninput="updateSummary()">
+   </div>
+  </div>
+ `;
+ document.getElementById("outputs").appendChild(div);
+ updateSummary();
+}
+
+function removeOutput(id){
+ const el=document.getElementById("output-"+id);
+ if(el) el.remove();
+ updateSummary();
+}
+
+function updateSummary(){
+ const inputRows=[...document.querySelectorAll("#inputs .item")];
+ const outputRows=[...document.querySelectorAll("#outputs .item")];
+
+ let bags=0,weight=0;
+ outputRows.forEach(row=>{
+  bags+=Number(row.querySelector(".bags").value)||0;
+  weight+=Number(row.querySelector(".weight").value)||0;
+ });
+
+ document.getElementById("inputCount").textContent=inputRows.length;
+ document.getElementById("bagTotal").textContent=bags;
+ document.getElementById("weightTotal").textContent=weight.toFixed(2)+" Kg";
+}
+
+function collectInputs(){
+ const rows=[...document.querySelectorAll("#inputs .item")];
+ const result=[];
+
+ for(const row of rows){
+  const material_id=row.querySelector(".material-select").value;
+  const quantity_used=Number(row.querySelector(".material-qty").value);
+  const unit=row.querySelector(".material-unit").value;
+
+  if(!material_id || !Number.isFinite(quantity_used) || quantity_used<=0){
+   throw new Error("Please select every raw material and enter a valid quantity.");
+  }
+
+  result.push({material_id,quantity_used,unit});
+ }
+
+ if(!result.length) throw new Error("Add at least one raw material.");
+ return result;
+}
+
+function collectOutputs(){
+ const rows=[...document.querySelectorAll("#outputs .item")];
+ const result=[];
+
+ for(const row of rows){
+  const product_id=row.querySelector(".product-select").value;
+  const bags_produced=Number(row.querySelector(".bags").value);
+  const total_weight_kg=Number(row.querySelector(".weight").value);
+
+  if(!product_id ||
+     !Number.isInteger(bags_produced) || bags_produced<=0 ||
+     !Number.isFinite(total_weight_kg) || total_weight_kg<=0){
+   throw new Error("Select every finished product and enter valid bags and weight.");
+  }
+
+  const product=products.find(p=>p.id===product_id);
+  if(!product) throw new Error("Selected product is not available.");
+
+  result.push({product_id,bags_produced,total_weight_kg});
+ }
+
+ if(!result.length) throw new Error("Add at least one finished product.");
+ return result;
+}
+
+async function saveProduction(){
+ if(saving) return;
+
+ hideNotice();
+
+ try{
+  const date=document.getElementById("productionDate").value;
+  if(!date) throw new Error("Select production date.");
+
+  const inputs=collectInputs();
+  const outputs=collectOutputs();
+
+  const totalBags=outputs.reduce((s,x)=>s+x.bags_produced,0);
+  const totalKg=outputs.reduce((s,x)=>s+x.total_weight_kg,0);
+
+  if(!confirm(
+   "Save this production batch?\n\n"+
+   "Total Bags: "+totalBags+
+   "\nTotal Output: "+totalKg.toFixed(2)+" Kg"+
+   "\nRaw material stock will be reduced."
+  )) return;
+
+  saving=true;
+  const btn=document.getElementById("saveBtn");
+  btn.disabled=true;
+  btn.textContent="Saving...";
+
+  const {data,error}=await db.rpc("create_factory_production",{
+   p_production_date:date,
+   p_notes:document.getElementById("notes").value.trim()||null,
+   p_inputs:inputs,
+   p_outputs:outputs
+  });
+
+  if(error) throw error;
+  if(!data || !data.success) throw new Error("Production was not confirmed.");
+
+  showNotice(
+   "Production saved successfully! Batch: "+data.batch_number+
+   " | Bags: "+data.total_bags+
+   " | Weight: "+Number(data.total_kg).toFixed(2)+" Kg",
+   "success"
+  );
+
+  resetForm();
+  await loadHistory();
+
+ }catch(error){
+  showNotice("Production Error: "+error.message);
+ }finally{
+  saving=false;
+  const btn=document.getElementById("saveBtn");
+  btn.disabled=false;
+  btn.textContent="Save Production";
+ }
+}
+
+function resetForm(){
+ document.getElementById("notes").value="";
+ document.getElementById("productionDate").value=today();
+ document.getElementById("inputs").innerHTML="";
+ document.getElementById("outputs").innerHTML="";
+ createBatchPreview();
+ addInput();
+ addOutput();
+ updateSummary();
+}
+
+async function loadHistory(){
+ const body=document.getElementById("history");
+ body.innerHTML='<tr><td colspan="5">Loading...</td></tr>';
+
+ try{
+  const {data,error}=await db
+   .from("production_batches")
+   .select("id,batch_number,production_date,total_output_bags,total_output_kg,status")
+   .order("production_date",{ascending:false})
+   .limit(100);
+
+  if(error) throw error;
+
+  if(!data || !data.length){
+   body.innerHTML='<tr><td colspan="5">No production records found.</td></tr>';
+   return;
+  }
+
+  body.innerHTML=data.map(item=>`
+   <tr>
+    <td>${escapeHTML(item.production_date)}</td>
+    <td>${escapeHTML(item.batch_number)}</td>
+    <td>${Number(item.total_output_bags||0)}</td>
+    <td>${Number(item.total_output_kg||0).toFixed(2)} Kg</td>
+    <td class="status">${escapeHTML(item.status)}</td>
+   </tr>
+  `).join("");
+
+ }catch(error){
+  body.innerHTML='<tr><td colspan="5">Could not load history: '+
+   escapeHTML(error.message)+'</td></tr>';
+ }
+}
+
+document.getElementById("productionDate")
+ .addEventListener("change",createBatchPreview);
+
+initialize();
+</script>
+</body>
+</html>
