@@ -236,6 +236,168 @@ footer{text-align:center;color:white;font-size:12px;padding:20px}
     height:48px;
   }
 }
+  /* ===== FULL WIDTH FACTORY LOGO ===== */
+.factory-banner{
+  width:100%;
+  height:240px;
+  padding:10px 18px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(120deg,#ffffff,#e6fff1,#e4f3ff);
+  overflow:hidden;
+}
+
+.factory-banner img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+}
+
+/* ===== ANIMATED FACTORY BACKGROUND ===== */
+.factory-scene{
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  overflow:hidden;
+}
+
+.factory-building{
+  position:absolute;
+  bottom:0;
+  right:5%;
+  width:360px;
+  height:170px;
+  background:linear-gradient(135deg,#176d80,#164b66);
+  opacity:.30;
+  clip-path:polygon(0 28%,18% 28%,18% 10%,35% 10%,
+  35% 28%,100% 28%,100% 100%,0 100%);
+}
+
+.factory-roof{
+  position:absolute;
+  top:28%;
+  left:0;
+  width:100%;
+  height:9px;
+  background:#9bd8b9;
+}
+
+.factory-window{
+  position:absolute;
+  top:65px;
+  width:40px;
+  height:35px;
+  background:#b9e9e9;
+  border:4px solid #d5f4e8;
+}
+
+.window-one{left:35px}
+.window-two{left:105px}
+.window-three{left:175px}
+
+.factory-door{
+  position:absolute;
+  bottom:0;
+  right:35px;
+  width:48px;
+  height:85px;
+  background:#123d55;
+}
+
+.factory-chimney{
+  position:absolute;
+  width:32px;
+  height:115px;
+  background:linear-gradient(90deg,#d6e7e7,#ffffff,#9fc6c7);
+  right:55px;
+  top:-80px;
+  border-radius:4px 4px 0 0;
+}
+
+.smoke{
+  position:absolute;
+  right:55px;
+  top:-110px;
+  width:35px;
+  height:35px;
+  border-radius:50%;
+  background:rgba(255,255,255,.65);
+  filter:blur(9px);
+  animation:smokeRise 6s infinite ease-out;
+}
+
+.smoke-one{animation-delay:0s}
+.smoke-two{animation-delay:1.5s}
+.smoke-three{animation-delay:3s}
+.smoke-four{animation-delay:4.5s}
+
+@keyframes smokeRise{
+  0%{
+    transform:translate(0,0) scale(.5);
+    opacity:0;
+  }
+  20%{opacity:.65}
+  60%{
+    transform:translate(-35px,-110px) scale(1.5);
+    opacity:.4;
+  }
+  100%{
+    transform:translate(-65px,-190px) scale(2);
+    opacity:0;
+  }
+}
+
+/* ===== COLORFUL GLASS FORMS ===== */
+.glass{
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,.76),
+    rgba(190,235,255,.57),
+    rgba(190,255,218,.57)
+  );
+  border:1px solid rgba(255,255,255,.75);
+  border-radius:20px;
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+  box-shadow:0 12px 35px rgba(0,30,50,.20);
+}
+
+.login-card{
+  background:linear-gradient(
+    135deg,
+    rgba(255,255,255,.82),
+    rgba(195,235,255,.70),
+    rgba(196,255,222,.72)
+  );
+  border:1px solid white;
+  box-shadow:0 15px 45px rgba(0,30,50,.25);
+}
+
+/* ===== MOBILE DESIGN ===== */
+@media(max-width:700px){
+  .factory-banner{
+    height:145px;
+    padding:8px;
+  }
+
+  .factory-building{
+    width:230px;
+    height:120px;
+    right:-20px;
+  }
+
+  .factory-chimney{
+    height:90px;
+    top:-60px;
+  }
+
+  .smoke{
+    right:55px;
+  }
+  }
 </style>
 </head>
 
@@ -244,6 +406,20 @@ footer{text-align:center;color:white;font-size:12px;padding:20px}
   <source src="factory-bg.mp4" type="video/mp4">
 </video>
 <div class="video-overlay"></div>
+  <div class="factory-scene">
+  <div class="factory-building">
+    <div class="factory-roof"></div>
+    <div class="factory-window window-one"></div>
+    <div class="factory-window window-two"></div>
+    <div class="factory-window window-three"></div>
+    <div class="factory-door"></div>
+    <div class="factory-chimney"></div>
+    <div class="smoke smoke-one"></div>
+    <div class="smoke smoke-two"></div>
+    <div class="smoke smoke-three"></div>
+    <div class="smoke smoke-four"></div>
+  </div>
+  
 
 <header class="topbar">
   <div class="logo">
