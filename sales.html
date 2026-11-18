@@ -7,116 +7,77 @@
 <title>Sales Management - INDIAN MURI FACTORY</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="config.js"></script>
 
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;
- font-family:Arial,sans-serif;
- background:#edf3f7;
- color:#17374a;
-}
-header{
- background:linear-gradient(120deg,#123d55,#1477b8);
- color:white;
- padding:18px 22px;
- display:flex;
- align-items:center;
- justify-content:space-between;
- gap:12px;
- flex-wrap:wrap;
-}
+body{margin:0;font-family:Arial,sans-serif;background:#edf3f7;color:#17374a}
+header{background:linear-gradient(120deg,#123d55,#1477b8);color:white;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 header h2{margin:0;font-size:22px}
-header a{
- color:white;text-decoration:none;
- background:#15965d;padding:10px 15px;
- border-radius:8px;font-weight:bold;
-}
+header a{color:white;text-decoration:none;background:#15965d;padding:10px 15px;border-radius:8px;font-weight:bold}
 .container{max-width:1200px;margin:22px auto;padding:0 14px}
-.card{
- background:white;border-radius:14px;
- padding:20px;margin-bottom:18px;
- box-shadow:0 4px 16px #18374a12;
-}
+.card{background:white;border-radius:14px;padding:20px;margin-bottom:18px;box-shadow:0 4px 16px #18374a12}
 h3{margin:0 0 16px;color:#1477b8}
 label{display:block;font-weight:bold;margin:12px 0 6px}
-input,select,textarea{
- width:100%;padding:12px;border:1px solid #ccd9e2;
- border-radius:8px;font-size:15px;background:white;
- color:#17374a;
-}
+input,select,textarea{width:100%;padding:12px;border:1px solid #ccd9e2;border-radius:8px;font-size:15px;background:white;color:#17374a}
 textarea{min-height:75px;resize:vertical}
-.grid{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
- gap:14px;
-}
-.product-row{
- border:1px solid #dce6ed;border-radius:12px;
- padding:15px;margin:12px 0;background:#f9fcfe;
-}
-.product-head{
- display:flex;justify-content:space-between;
- align-items:center;gap:10px;
-}
-.remove{
- border:0;background:#ffe8e8;color:#b42318;
- padding:8px 12px;border-radius:7px;font-weight:bold;
-}
-button{
- border:0;border-radius:8px;padding:12px 18px;
- cursor:pointer;font-size:15px;font-weight:bold;
-}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.product-row{border:1px solid #dce6ed;border-radius:12px;padding:15px;margin:12px 0;background:#f9fcfe}
+.product-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+button{border:0;border-radius:8px;padding:12px 18px;cursor:pointer;font-size:14px;font-weight:bold}
 .primary{background:#1477b8;color:white}
 .green{background:#15965d;color:white}
 .secondary{background:#e7f0f6;color:#17374a}
+.whatsapp{background:#20a65a;color:white}
+.remove{background:#ffe8e8;color:#b42318;padding:8px 12px}
 button:disabled{opacity:.5;cursor:not-allowed}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-.summary{
- background:#f0f8fc;border-radius:12px;
- padding:16px;margin-top:15px;
-}
-.summary-row{
- display:flex;justify-content:space-between;
- gap:12px;padding:7px 0;
-}
-.grand{
- font-size:21px;font-weight:bold;color:#1477b8;
- border-top:1px solid #cbdde8;padding-top:12px;
-}
+.summary{background:#f0f8fc;border-radius:12px;padding:16px;margin-top:15px}
+.summary-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0}
+.grand{font-size:21px;font-weight:bold;color:#1477b8;border-top:1px solid #cbdde8;padding-top:12px}
 .status{padding:12px;border-radius:8px;margin:12px 0;display:none}
 .error{background:#ffe8e8;color:#a32121}
 .success{background:#e4f7ed;color:#126b40}
+.stock-info{margin-top:10px;padding:11px;background:#e7f7ed;border:1px solid #b9dfc6;border-radius:8px;color:#17613a;line-height:1.6}
+.stock-info.out{background:#fff0ef;border-color:#efc4c0;color:#a32121}
 #invoice{display:none}
-.invoice-paper{
- background:white;border:1px solid #ddd;
- padding:24px;max-width:800px;margin:auto;color:#222;
-}
-.invoice-paper h2{text-align:center;margin:0 0 5px}
+.invoice-paper{background:white;border:1px solid #d4dce2;padding:25px;max-width:850px;margin:auto;color:#222}
+.invoice-header{text-align:center;border-bottom:3px solid #1477b8;padding-bottom:15px}
+.invoice-header h1{margin:0;color:#123d55;font-size:27px}
+.invoice-header h2{margin:8px 0;color:#1477b8;letter-spacing:2px}
+.invoice-meta{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;margin:15px 0}
+.invoice-meta div{flex:1;min-width:230px;border:1px solid #dce4e9;border-radius:8px;padding:12px}
+.invoice-meta h4{margin:0 0 9px;color:#1477b8}
 .invoice-paper table{width:100%;border-collapse:collapse;margin-top:18px}
-.invoice-paper th,.invoice-paper td{
- border:1px solid #ccc;padding:9px;text-align:left;
-}
+.invoice-paper th,.invoice-paper td{border:1px solid #ccc;padding:9px;text-align:left;font-size:13px}
 .invoice-paper th{background:#edf4f8}
-.invoice-bottom{
- display:flex;justify-content:space-between;
- gap:20px;align-items:center;margin-top:22px;
-}
+.invoice-totals{max-width:350px;margin:15px 0 15px auto}
+.invoice-totals div{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #eee}
+.invoice-totals .final{font-size:18px;font-weight:bold;color:#1477b8}
+.invoice-bottom{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:22px}
 #qrcode{padding:8px;background:white;display:inline-block}
-.small{font-size:13px;color:#607888}
+.invoice-footer{text-align:center;border-top:1px solid #ddd;margin-top:20px;padding-top:12px}
+.small{font-size:12px;color:#607888}
+.history-item{border:1px solid #dce6ed;border-radius:10px;padding:14px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.history-item strong{color:#123d55}
+.empty{padding:20px;text-align:center;color:#607888}
 @media(max-width:650px){
  .grid{grid-template-columns:1fr}
  header h2{font-size:18px}
  .card{padding:15px}
  .invoice-paper{padding:12px}
+ .invoice-meta{display:block}
+ .invoice-meta div{margin-bottom:10px}
  .invoice-bottom{flex-direction:column;align-items:flex-start}
+ .invoice-paper th,.invoice-paper td{padding:5px;font-size:11px}
 }
 @media print{
+ @page{size:A4;margin:10mm}
  body{background:white}
  header,.container,.no-print{display:none!important}
- #invoice{display:block!important}
- .invoice-paper{border:0;max-width:none}
+ #invoice{display:block!important;margin:0;padding:0;box-shadow:none}
+ .invoice-paper{border:0;max-width:none;padding:0}
 }
 </style>
 </head>
@@ -193,21 +154,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <textarea id="notes" placeholder="Additional notes"></textarea>
 
   <div class="summary">
-   <div class="summary-row">
-    <span>Subtotal</span><strong id="subtotal">₹0.00</strong>
-   </div>
-   <div class="summary-row">
-    <span>Discount</span><strong id="discountView">₹0.00</strong>
-   </div>
-   <div class="summary-row">
-    <span>Other Charges</span><strong id="chargesView">₹0.00</strong>
-   </div>
-   <div class="summary-row grand">
-    <span>Grand Total</span><span id="grandTotal">₹0.00</span>
-   </div>
-   <div class="summary-row">
-    <span>Balance Due</span><strong id="due">₹0.00</strong>
-   </div>
+   <div class="summary-row"><span>Subtotal</span><strong id="subtotal">₹0.00</strong></div>
+   <div class="summary-row"><span>Discount</span><strong id="discountView">₹0.00</strong></div>
+   <div class="summary-row"><span>Other Charges</span><strong id="chargesView">₹0.00</strong></div>
+   <div class="summary-row grand"><span>Grand Total</span><span id="grandTotal">₹0.00</span></div>
+   <div class="summary-row"><span>Balance Due</span><strong id="due">₹0.00</strong></div>
   </div>
 
   <div class="actions">
@@ -215,16 +166,22 @@ button:disabled{opacity:.5;cursor:not-allowed}
   </div>
  </div>
 
+ <!-- INVOICE -->
  <div id="invoice" class="card">
   <div class="invoice-paper">
-   <h2>INDIAN MURI FACTORY</h2>
-   <p style="text-align:center">SALES INVOICE</p>
-   <hr>
+
+   <div class="invoice-header">
+    <h1>INDIAN MURI FACTORY</h1>
+    <p>QUALITY MURI MANUFACTURING & SUPPLY</p>
+    <h2>SALES INVOICE</h2>
+   </div>
+
    <div id="invoiceDetails"></div>
 
    <table>
     <thead>
      <tr>
+      <th>SL</th>
       <th>Product</th>
       <th>Weight</th>
       <th>Bag Color</th>
@@ -236,7 +193,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <tbody id="invoiceItems"></tbody>
    </table>
 
-   <div id="invoiceTotals"></div>
+   <div id="invoiceTotals" class="invoice-totals"></div>
 
    <div class="invoice-bottom">
     <div>
@@ -245,31 +202,68 @@ button:disabled{opacity:.5;cursor:not-allowed}
      <div id="qrcode"></div>
     </div>
     <div>
-     <p>Authorized Signature</p>
+     <p><strong>For INDIAN MURI FACTORY</strong></p>
      <br><br>
-     ______________________
+     __________________________
+     <p>Authorized Signature</p>
     </div>
    </div>
-   <p class="small">Thank you for your business.</p>
+
+   <div class="invoice-footer">
+    <strong>Thank you for your business!</strong>
+    <p class="small">This is a computer-generated sales invoice.</p>
+   </div>
+
   </div>
 
   <div class="actions no-print">
    <button class="primary" onclick="window.print()">Print Invoice</button>
-   <button class="secondary" onclick="newSale()">New Sale</button>
+   <button class="secondary" onclick="shareInvoice()">Share Invoice</button>
+   <button class="whatsapp" onclick="shareWhatsApp()">WhatsApp</button>
+   <button class="green" onclick="newSale()">New Sale</button>
   </div>
+ </div>
+
+ <!-- INVOICE HISTORY -->
+ <div class="card">
+  <h3>Invoice History</h3>
+  <p class="small">Recently generated invoices. Select an invoice to view, print or share it again.</p>
+  <div id="historyList">
+   <div class="empty">Loading invoice history...</div>
+  </div>
+  <button class="secondary" onclick="loadHistory()">Refresh History</button>
  </div>
 
 </div>
 
 <script>
+/* =========================================
+   FACTORY DETAILS
+   নিজের Factory Details এখানে পরিবর্তন করুন
+========================================= */
+const FACTORY = {
+ name: "INDIAN MURI FACTORY",
+ address: "Enter Factory Full Address Here",
+ mobile: "Enter Factory Mobile Number",
+ email: "Enter Factory Email (Optional)",
+ gst: "GSTIN: Not Provided"
+};
+
 let db;
 let customers=[];
 let products=[];
-let stockmao={};
+let stockMap={};
 let savedInvoice=null;
+let historyInvoices=[];
 
 function money(value){
  return "₹"+Number(value||0).toFixed(2);
+}
+
+function escapeHTML(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
 }
 
 function showMessage(message,type){
@@ -308,12 +302,14 @@ async function init(){
    throw new Error("Please login as an approved administrator first.");
   }
 
-  await Promise.all([loadCustomers(),loadProducts()]);
+  await Promise.all([loadCustomers(),loadProducts(),loadStock()]);
 
   document.getElementById("invoiceDate").value=
    new Date().toISOString().slice(0,10);
 
   addProductRow();
+  await loadHistory();
+
  }catch(error){
   showMessage(error.message,"error");
  }
@@ -334,7 +330,7 @@ async function loadCustomers(){
  customers.forEach(c=>{
   const option=document.createElement("option");
   option.value=c.id;
-  option.textContent=c.customer_name+" - "+c.mobile;
+  option.textContent=c.customer_name+" - "+(c.mobile||"");
   select.appendChild(option);
  });
 }
@@ -346,8 +342,27 @@ async function loadProducts(){
   .order("product_name");
 
  if(error) throw error;
-
  products=(data||[]).filter(p=>p.is_active!==false);
+}
+
+async function loadStock(){
+ const {data,error}=await db
+  .from("finished_stock")
+  .select("product_id,current_bags,current_weight_kg");
+
+ if(error){
+  console.error("Stock loading error:",error.message);
+  stockMap={};
+  return;
+ }
+
+ stockMap={};
+ (data||[]).forEach(s=>{
+  stockMap[s.product_id]={
+   bags:Number(s.current_bags||0),
+   weight:Number(s.current_weight_kg||0)
+  };
+ });
 }
 
 document.getElementById("customer").addEventListener("change",function(){
@@ -361,7 +376,7 @@ function addProductRow(){
  row.className="product-row";
 
  const options=products.map(p=>
-  `<option value="${p.id}">${escapeHTML(p.product_name)} (${p.weight_kg} KG)</option>`
+  `<option value="${escapeHTML(p.id)}">${escapeHTML(p.product_name)} (${escapeHTML(p.weight_kg)} KG)</option>`
  ).join("");
 
  row.innerHTML=`
@@ -369,10 +384,16 @@ function addProductRow(){
    <strong>Product Item</strong>
    <button type="button" class="remove" onclick="this.closest('.product-row').remove();calculate()">Remove</button>
   </div>
+
   <label>Finished Product</label>
-  <select class="productSelect" onchange="calculate()">
+  <select class="productSelect" onchange="updateRowStock(this);calculate()">
    <option value="">Select Product</option>${options}
   </select>
+
+  <div class="stock-info">
+   Available Stock: Select a product
+  </div>
+
   <div class="grid">
    <div>
     <label>Bag Color</label>
@@ -395,13 +416,29 @@ function addProductRow(){
    </div>
   </div>
  `;
+
  document.getElementById("productRows").appendChild(row);
 }
 
-function escapeHTML(value){
- return String(value??"").replace(/[&<>"']/g,c=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- }[c]));
+function updateRowStock(select){
+ const row=select.closest(".product-row");
+ const info=row.querySelector(".stock-info");
+ const productId=select.value;
+
+ if(!productId){
+  info.className="stock-info";
+  info.textContent="Available Stock: Select a product";
+  return;
+ }
+
+ const stock=stockMap[productId]||{bags:0,weight:0};
+ info.className="stock-info"+(stock.bags<=0?" out":"");
+
+ info.innerHTML=`
+  <strong>Available Stock: ${stock.bags} Bags</strong><br>
+  Available Weight: ${stock.weight.toFixed(2)} KG
+  ${stock.bags<=0?"<br><strong>Out of Stock</strong>":""}
+ `;
 }
 
 function getRows(){
@@ -452,6 +489,11 @@ function collectItems(){
   if(!Number.isFinite(unit_price)||unit_price<0)
    throw new Error("Please enter a valid selling price.");
 
+  const available=(stockMap[product_id]||{bags:0}).bags;
+  if(quantity_bags>available){
+   throw new Error("Insufficient stock! Available: "+available+" bags.");
+  }
+
   items.push({product_id,quantity_bags,unit_price,bag_color});
  }
 
@@ -472,10 +514,8 @@ async function saveSale(){
 
   if(totals.discount<0||totals.charges<0||totals.paid<0)
    throw new Error("Amounts cannot be negative.");
-
   if(totals.discount>totals.subtotal)
    throw new Error("Discount cannot exceed subtotal.");
-
   if(totals.paid>totals.grand)
    throw new Error("Received amount cannot exceed grand total.");
 
@@ -496,8 +536,25 @@ async function saveSale(){
   if(!data||!data.success) throw new Error("Sale could not be saved.");
 
   const customer=customers.find(c=>c.id===customer_id);
-  showInvoice(data,customer,items,totals);
+  const invoiceData={
+   id:data.sale_id||data.id||null,
+   invoice_number:data.invoice_number,
+   invoice_date:document.getElementById("invoiceDate").value,
+   qr_token:data.qr_token,
+   total_amount:totals.grand,
+   subtotal:totals.subtotal,
+   discount:totals.discount,
+   other_charges:totals.charges,
+   paid_amount:totals.paid,
+   payment_method:document.getElementById("paymentMethod").value,
+   notes:document.getElementById("notes").value
+  };
+
+  showInvoice(invoiceData,customer,items,totals);
   showMessage("Sale saved successfully. Invoice generated.","success");
+
+  await loadStock();
+  await loadHistory();
 
  }catch(error){
   showMessage(error.message||"Unable to save sale.","error");
@@ -508,55 +565,216 @@ async function saveSale(){
 }
 
 function showInvoice(data,customer,items,totals){
- savedInvoice=data;
+ savedInvoice={
+  data,customer,items,totals
+ };
 
  document.getElementById("invoice").style.display="block";
 
  document.getElementById("invoiceDetails").innerHTML=`
-  <p><strong>Invoice Number:</strong> ${escapeHTML(data.invoice_number)}</p>
-  <p><strong>Date:</strong> ${escapeHTML(document.getElementById("invoiceDate").value)}</p>
-  <p><strong>Customer:</strong> ${escapeHTML(customer.customer_name)}</p>
-  <p><strong>Mobile:</strong> ${escapeHTML(customer.mobile)}</p>
-  <p><strong>Address:</strong> ${escapeHTML(getAddress(customer))}</p>
+  <div class="invoice-meta">
+   <div>
+    <h4>FACTORY DETAILS</h4>
+    <strong>${escapeHTML(FACTORY.name)}</strong><br>
+    ${escapeHTML(FACTORY.address)}<br>
+    Mobile: ${escapeHTML(FACTORY.mobile)}<br>
+    ${escapeHTML(FACTORY.email)}<br>
+    ${escapeHTML(FACTORY.gst)}
+   </div>
+   <div>
+    <h4>CUSTOMER DETAILS</h4>
+    <strong>${escapeHTML(customer?.customer_name||"Customer")}</strong><br>
+    Mobile: ${escapeHTML(customer?.mobile||"")}<br>
+    Address: ${escapeHTML(getAddress(customer||{}))}
+   </div>
+  </div>
+
+  <div class="invoice-meta">
+   <div>
+    <strong>Invoice No:</strong> ${escapeHTML(data.invoice_number||"")}<br>
+    <strong>Invoice Date:</strong> ${escapeHTML(data.invoice_date||"")}
+   </div>
+   <div>
+    <strong>Payment Method:</strong> ${escapeHTML(data.payment_method||"")}<br>
+    <strong>Payment Status:</strong> ${(Number(totals.grand)-Number(totals.paid))<=0?"Paid":"Due"}
+   </div>
+  </div>
  `;
 
- document.getElementById("invoiceItems").innerHTML=items.map(item=>{
+ document.getElementById("invoiceItems").innerHTML=items.map((item,index)=>{
   const p=products.find(x=>x.id===item.product_id);
   return `<tr>
-   <td>${escapeHTML(p?.product_name||"Product")}</td>
-   <td>${escapeHTML(p?.weight_kg||"-")} KG</td>
-   <td>${item.bag_color==="white"?"White":"Colored"}</td>
-   <td>${item.quantity_bags}</td>
+   <td>${index+1}</td>
+   <td>${escapeHTML(item.product_name||p?.product_name||"Product")}</td>
+   <td>${escapeHTML(item.weight_kg??p?.weight_kg??"-")} KG</td>
+   <td>${Number(item.quantity_bags)}</td>
    <td>${money(item.unit_price)}</td>
-   <td>${money(item.quantity_bags*item.unit_price)}</td>
+   <td>${money(Number(item.quantity_bags)*Number(item.unit_price))}</td>
   </tr>`;
  }).join("");
 
  document.getElementById("invoiceTotals").innerHTML=`
-  <p style="text-align:right">Subtotal: <strong>${money(totals.subtotal)}</strong></p>
-  <p style="text-align:right">Discount: <strong>${money(totals.discount)}</strong></p>
-  <p style="text-align:right">Other Charges: <strong>${money(totals.charges)}</strong></p>
-  <p style="text-align:right;font-size:20px">Grand Total: <strong>${money(totals.grand)}</strong></p>
-  <p style="text-align:right">Amount Received: <strong>${money(totals.paid)}</strong></p>
-  <p style="text-align:right">Balance Due: <strong>${money(totals.grand-totals.paid)}</strong></p>
+  <div><span>Subtotal</span><strong>${money(totals.subtotal)}</strong></div>
+  <div><span>Discount</span><strong>${money(totals.discount)}</strong></div>
+  <div><span>Other Charges</span><strong>${money(totals.charges)}</strong></div>
+  <div class="final"><span>Grand Total</span><strong>${money(totals.grand)}</strong></div>
+  <div><span>Amount Received</span><strong>${money(totals.paid)}</strong></div>
+  <div><span>Balance Due</span><strong>${money(totals.grand-totals.paid)}</strong></div>
  `;
-
- const driverUrl=new URL("driver.html",window.location.href);
- driverUrl.searchParams.set("token",data.qr_token);
-
  const qr=document.getElementById("qrcode");
  qr.innerHTML="";
- new QRCode(qr,{
-  text:driverUrl.toString(),
-  width:150,
-  height:150
- });
+
+ if(data.qr_token){
+  const driverUrl=new URL("driver.html",window.location.href);
+  driverUrl.searchParams.set("token",data.qr_token);
+  new QRCode(qr,{
+   text:driverUrl.toString(),
+   width:130,
+   height:130
+  });
+ }else{
+  qr.textContent="Delivery QR unavailable";
+ }
 
  document.getElementById("invoice").scrollIntoView({behavior:"smooth"});
 }
 
+function getInvoiceText(){
+ if(!savedInvoice) return "";
+ const {data,customer,items,totals}=savedInvoice;
+
+ let textMessage=
+ `INDIAN MURI FACTORY\nSALES INVOICE\n`+
+ `Invoice: ${data.invoice_number}\n`+
+ `Date: ${data.invoice_date}\n\n`+
+ `Customer: ${customer?.customer_name||""}\n`+
+ `Mobile: ${customer?.mobile||""}\n`+
+ `Address: ${getAddress(customer||{})}\n\n`+
+ `Products:\n`;
+
+ items.forEach((item,i)=>{
+  const p=products.find(x=>x.id===item.product_id);
+  textMessage+=`${i+1}. ${item.product_name||p?.product_name||"Product"} - ${item.quantity_bags} bags x ${money(item.unit_price)} = ${money(item.quantity_bags*item.unit_price)}\n`;
+ });
+
+ textMessage+=
+ `\nSubtotal: ${money(totals.subtotal)}`+
+ `\nDiscount: ${money(totals.discount)}`+
+ `\nOther Charges: ${money(totals.charges)}`+
+ `\nGrand Total: ${money(totals.grand)}`+
+ `\nReceived: ${money(totals.paid)}`+
+ `\nBalance Due: ${money(totals.grand-totals.paid)}`+
+ `\n\nThank you for your business!`;
+
+ return textMessage;
+}
+
+async function shareInvoice(){
+ if(!savedInvoice) return;
+
+ const textMessage=getInvoiceText();
+
+ if(navigator.share){
+  try{
+   await navigator.share({
+    title:"INDIAN MURI FACTORY - Invoice",
+    text:textMessage
+   });
+  }catch(error){
+   if(error.name!=="AbortError") alert("Unable to share invoice.");
+  }
+ }else{
+  try{
+   await navigator.clipboard.writeText(textMessage);
+   alert("Invoice details copied. You can paste and share them.");
+  }catch(error){
+   alert("Sharing is not supported on this browser.");
+  }
+ }
+}
+ function shareWhatsApp(){
+ if(!savedInvoice) return;
+ const textMessage=encodeURIComponent(getInvoiceText());
+ window.open("https://wa.me/?text="+textMessage,"_blank");
+}
+
+async function loadHistory(){
+ const box=document.getElementById("historyList");
+ box.innerHTML='<div class="empty">Loading invoice history...</div>';
+
+ try{
+  const {data,error}=await db
+   .from("sales")
+   .select("id,invoice_number,invoice_date,total_amount,subtotal,discount,other_charges,paid_amount,payment_method,customer_id,qr_token,notes,created_at")
+   .order("created_at",{ascending:false})
+   .limit(50);
+
+  if(error) throw error;
+
+  historyInvoices=data||[];
+
+  if(historyInvoices.length===0){
+   box.innerHTML='<div class="empty">No invoices found.</div>';
+   return;
+  }
+  box.innerHTML=historyInvoices.map(s=>{
+   const c=customers.find(x=>x.id===s.customer_id);
+   return `
+    <div class="history-item">
+     <div>
+      <strong>${escapeHTML(s.invoice_number)}</strong><br>
+      <span class="small">${escapeHTML(s.invoice_date||"")}</span><br>
+      ${escapeHTML(c?.customer_name||"Customer")}<br>
+      <strong>${money(s.total_amount)}</strong>
+     </div>
+     <button class="primary" onclick="openHistoryInvoice('${s.id}')">View Invoice</button>
+    </div>
+   `;
+  }).join("");
+
+ }catch(error){
+  box.innerHTML='<div class="empty">Could not load invoice history: '+escapeHTML(error.message)+'</div>';
+ }
+}
+
+async function openHistoryInvoice(saleId){
+ try{
+  const sale=historyInvoices.find(s=>s.id===saleId);
+  if(!sale) throw new Error("Invoice not found.");
+
+  const {data:itemsData,error}=await db
+   .from("sale_items")
+   .select("product_id,quantity_bags,unit_price,bag_color")
+   .eq("sale_id",saleId);
+
+  if(error) throw error;
+
+  const customer=customers.find(c=>c.id===sale.customer_id);
+  if(!customer) throw new Error("Customer details not found. Please refresh the page.");
+
+  const items=(itemsData||[]).map(item=>({
+   ...item,
+   product_name:products.find(p=>p.id===item.product_id)?.product_name||"Product",
+   weight_kg:products.find(p=>p.id===item.product_id)?.weight_kg||"-"
+  }));
+
+  const subtotal=Number(sale.subtotal??items.reduce((sum,i)=>sum+Number(i.quantity_bags)*Number(i.unit_price),0));
+  const discount=Number(sale.discount||0);
+  const charges=Number(sale.other_charges||0);
+  const grand=Number(sale.total_amount||subtotal-discount+charges);
+  const paid=Number(sale.paid_amount||0);
+
+  showInvoice(sale,customer,items,{
+   subtotal,discount,charges,grand,paid
+  });
+  }catch(error){
+  showMessage("Unable to open invoice: "+error.message,"error");
+ }
+}
+
 function newSale(){
  if(!confirm("Start a new sale?")) return;
+
  document.getElementById("customer").value="";
  document.getElementById("customerMobile").value="";
  document.getElementById("customerAddress").value="";
@@ -567,9 +785,12 @@ function newSale(){
  document.getElementById("notes").value="";
  document.getElementById("invoice").style.display="none";
  document.getElementById("invoiceDate").value=new Date().toISOString().slice(0,10);
+
  hideMessage();
+ savedInvoice=null;
  addProductRow();
  calculate();
+ window.scrollTo({top:0,behavior:"smooth"});
 }
 
 init();
