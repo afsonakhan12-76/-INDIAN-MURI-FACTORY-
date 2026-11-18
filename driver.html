@@ -1,0 +1,430 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Driver Delivery Portal - INDIAN MURI FACTORY</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f1f5f9;font-family:Arial,sans-serif;color:#172033}
+header{background:#123d35;color:white;padding:20px;text-align:center}
+header h2{margin:0 0 6px}
+.container{max-width:760px;margin:20px auto;padding:12px}
+.card{background:white;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 3px 14px #0000000c}
+h3{margin-top:0;color:#087f5b}
+input,select,textarea{width:100%;padding:12px;margin:7px 0 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px}
+label{font-weight:600;font-size:14px}
+button{border:0;border-radius:8px;padding:13px 16px;background:#087f5b;color:white;font-size:15px;font-weight:bold;cursor:pointer;width:100%;margin-top:8px}
+button:disabled{opacity:.55;cursor:not-allowed}
+.secondary{background:#334155}
+.hidden{display:none!important}
+.info{background:#ecfdf5;padding:12px;border-radius:8px;margin:8px 0}
+.error{background:#fee2e2;color:#991b1b;padding:12px;border-radius:8px;margin:10px 0}
+.success{background:#dcfce7;color:#166534;padding:12px;border-radius:8px;margin:10px 0}
+.item{border-bottom:1px solid #e2e8f0;padding:10px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:500px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>INDIAN MURI FACTORY</h2>
+<div>Driver Delivery Portal</div>
+</header>
+
+<div class="container">
+
+<div id="loginCard" class="card">
+<h3>Driver Login</h3>
+<label>Driver Password</label>
+<input id="password" type="password" placeholder="Enter your password">
+<button id="loginBtn" onclick="loginDriver()">Login</button>
+<div id="loginMessage"></div>
+</div>
+
+<div id="portal" class="hidden">
+
+<div class="card">
+<h3>Delivery Information</h3>
+<div id="deliveryInfo">Loading delivery information...</div>
+</div>
+
+<div class="card">
+<h3>Delivery Report</h3>
+
+<label>Delivered Bags</label>
+<input id="delivered" type="number" min="0" step="1" value="0">
+
+<label>Undelivered Bags</label>
+<input id="undelivered" type="number" min="0" step="1" value="0">
+
+<label>Damaged Bags</label>
+<input id="damaged" type="number" min="0" step="1" value="0">
+
+<div class="grid">
+<div>
+<label>White Empty Bags Returned</label>
+<input id="whiteReturned" type="number" min="0" step="1" value="0">
+</div>
+<div>
+<label>Color Empty Bags Returned</label>
+<input id="colorReturned" type="number" min="0" step="1" value="0">
+</div>
+<div>
+<label>White Empty Bags Pending</label>
+<input id="whitePending" type="number" min="0" step="1" value="0">
+</div>
+<div>
+<label>Color Empty Bags Pending</label>
+<input id="colorPending" type="number" min="0" step="1" value="0">
+</div>
+</div>
+
+<label>Damage Reason</label>
+<textarea id="damageReason" rows="2" placeholder="Enter damage details, if any"></textarea>
+
+<label>Driver Notes</label>
+<textarea id="driverNotes" rows="3" placeholder="Enter additional information"></textarea>
+
+<button id="reportBtn" onclick="submitReport()">Submit Delivery Report</button>
+<div id="reportMessage"></div>
+</div>
+
+<div class="card">
+<h3>Customer Payment Collection</h3>
+
+<label>Cash Amount (₹)</label>
+<input id="cashAmount" type="number" min="0" step="0.01" value="0">
+
+<label>Online Payment Amount (₹)</label>
+<input id="onlineAmount" type="number" min="0" step="0.01" value="0">
+
+<label>Online Payment Method</label>
+<select id="onlineMethod">
+<option value="">Select Payment Method</option>
+<option value="UPI">UPI</option>
+<option value="PhonePe">PhonePe</option>
+<option value="Google Pay">Google Pay</option>
+<option value="Paytm">Paytm</option>
+<option value="Bank Transfer">Bank Transfer</option>
+<option value="Other">Other</option>
+</select>
+
+<label>Transaction ID / UTR</label>
+<input id="utr" type="text" placeholder="Enter Transaction ID">
+
+<label>Payment Proof URL (Optional)</label>
+<input id="proofUrl" type="url" placeholder="https://...">
+
+<label>Payment Notes</label>
+<textarea id="paymentNotes" rows="2" placeholder="Enter payment notes"></textarea>
+
+<button id="paymentBtn" onclick="submitPayment()">Submit Payment Report</button>
+<div id="paymentMessage"></div>
+</div>
+
+<button class="secondary" onclick="location.reload()">Close Portal</button>
+</div>
+</div>
+
+<script>
+let client;
+let token = new URLSearchParams(location.search).get("token");
+let driverPassword = "";
+let deliveryData = null;
+let reportSubmitted = false;
+let paymentSubmitted = false;
+
+function getConfig(){
+  const c = window.APP_CONFIG || window.CONFIG || {};
+  return {
+    url: window.SUPABASE_URL || window.supabaseUrl || c.SUPABASE_URL || c.supabaseUrl,
+    key: window.SUPABASE_ANON_KEY || window.supabaseAnonKey || c.SUPABASE_ANON_KEY || c.supabaseAnonKey
+  };
+}
+
+function initSupabase(){
+  const cfg = getConfig();
+  if(!cfg.url || !cfg.key || !window.supabase){
+    throw new Error("Please check your Supabase URL and Anon Key in config.js.");
+  }
+  client = window.supabase.createClient(cfg.url,cfg.key);
+}
+
+function showMessage(id,message,type="error"){
+  const el=document.getElementById(id);
+  el.className=type;
+  el.textContent=message;
+}
+
+function validNumber(id){
+  const value=Number(document.getElementById(id).value);
+  return Number.isFinite(value) && value>=0 ? value : null;
+}
+
+function lockButton(id,locked){
+  document.getElementById(id).disabled=locked;
+}
+
+async function loginDriver(){
+  const password=document.getElementById("password").value.trim();
+
+  if(!token){
+    showMessage("loginMessage","Invalid link. Delivery token not found.");
+    return;
+  }
+
+  if(!password){
+    showMessage("loginMessage","Please enter your password.");
+    return;
+  }
+
+  lockButton("loginBtn",true);
+
+  try{
+    const {data,error}=await client.rpc("verify_driver_delivery_access",{
+      p_token:token,
+      p_password:password
+    });
+
+    if(error) throw error;
+
+    const valid = data===true ||
+      data?.success===true ||
+      data?.authorized===true ||
+      data?.valid===true ||
+      data?.access_granted===true;
+
+    if(!valid){
+      throw new Error(data?.message || "Incorrect password or expired link.");
+    }
+
+    driverPassword=password;
+    await loadDelivery();
+
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("portal").classList.remove("hidden");
+
+  }catch(e){
+    showMessage("loginMessage",e.message || "Login failed.");
+  }finally{
+    lockButton("loginBtn",false);
+  }
+}
+
+async function loadDelivery(){
+  const {data,error}=await client.rpc("get_driver_delivery_details",{
+    p_token:token,
+    p_password:driverPassword
+  });
+
+  if(error) throw error;
+  if(!data || data.success===false){
+    throw new Error(data?.message || "Delivery information not available.");
+  }
+
+  deliveryData=data;
+  renderDelivery(data);
+}
+
+function renderDelivery(data){
+  const customer=data.customer || {};
+  const items=Array.isArray(data.items)?data.items:[];
+  const info=document.getElementById("deliveryInfo");
+
+  info.replaceChildren();
+
+  const details=[
+    ["Driver",data.driver_name],
+    ["Delivery Number",data.delivery_number || data.delivery_id],
+    ["Customer",customer.name],
+    ["Mobile",customer.mobile],
+    ["Address",customer.address],
+    ["Delivery Date",data.delivery_date]
+  ];
+
+  details.forEach(([label,value])=>{
+    if(value!==undefined && value!==null){
+      const div=document.createElement("div");
+      div.className="info";
+      div.textContent=label+": "+value;
+      info.appendChild(div);
+    }
+  });
+
+  const title=document.createElement("h4");
+  title.textContent="Product List";
+  info.appendChild(title);
+
+  if(items.length===0){
+    const p=document.createElement("p");
+    p.textContent="No product information available.";
+    info.appendChild(p);
+  }
+
+  items.forEach(item=>{
+    const div=document.createElement("div");
+    div.className="item";
+    div.textContent=
+      String(item.product_name || item.name || "Product")+
+      " - Quantity: "+String(item.quantity ?? item.qty ?? 0);
+    info.appendChild(div);
+  });
+
+  if(data.report_submitted===true){
+    reportSubmitted=true;
+    lockReportForm();
+  }
+
+  if(data.payment_submitted===true){
+    paymentSubmitted=true;
+    lockPaymentForm();
+  }
+}
+
+function lockReportForm(){
+  ["delivered","undelivered","damaged","whiteReturned",
+   "colorReturned","whitePending","colorPending",
+   "damageReason","driverNotes","reportBtn"]
+   .forEach(id=>document.getElementById(id).disabled=true);
+}
+
+function lockPaymentForm(){
+  ["cashAmount","onlineAmount","onlineMethod","utr",
+   "proofUrl","paymentNotes","paymentBtn"]
+   .forEach(id=>document.getElementById(id).disabled=true);
+}
+
+async function submitReport(){
+  if(reportSubmitted) return;
+
+  const ids=["delivered","undelivered","damaged","whiteReturned",
+    "colorReturned","whitePending","colorPending"];
+
+  const nums=ids.map(validNumber);
+
+  if(nums.some(v=>v===null)){
+    showMessage("reportMessage","All quantities must be zero or greater.");
+    return;
+  }
+
+  const [delivered,undelivered,damaged,whiteReturned,
+    colorReturned,whitePending,colorPending]=nums;
+
+  if(delivered+undelivered+damaged<=0){
+    showMessage("reportMessage","Please enter the delivery quantities.");
+    return;
+  }
+
+  lockButton("reportBtn",true);
+
+  try{
+    const {data,error}=await client.rpc("submit_driver_delivery_report",{
+      p_token:token,
+      p_password:driverPassword,
+      p_delivered:delivered,
+      p_undelivered:undelivered,
+      p_damaged:damaged,
+      p_white_empty_returned:whiteReturned,
+      p_color_empty_returned:colorReturned,
+      p_white_empty_pending:whitePending,
+      p_color_empty_pending:colorPending,
+      p_damage_reason:document.getElementById("damageReason").value.trim(),
+      p_driver_notes:document.getElementById("driverNotes").value.trim()
+    });
+
+    if(error) throw error;
+
+    if(data===false || data?.success===false){
+      throw new Error(data?.message || "Report submission failed.");
+    }
+
+    reportSubmitted=true;
+    lockReportForm();
+
+    showMessage("reportMessage","Delivery report submitted successfully.","success");
+
+  }catch(e){
+    showMessage("reportMessage",e.message || "Unable to submit delivery report.");
+    lockButton("reportBtn",false);
+  }
+}
+
+async function submitPayment(){
+  if(paymentSubmitted) return;
+
+  const cash=validNumber("cashAmount");
+  const online=validNumber("onlineAmount");
+
+  if(cash===null || online===null){
+    showMessage("paymentMessage","Please enter valid payment amounts.");
+    return;
+  }
+
+  if(online>0 && !document.getElementById("onlineMethod").value){
+    showMessage("paymentMessage","Please select an online payment method.");
+    return;
+  }
+
+  const proof=document.getElementById("proofUrl").value.trim();
+
+  if(proof){
+    try{new URL(proof)}catch(e){
+      showMessage("paymentMessage","Please enter a valid payment proof URL.");
+      return;
+    }
+  }
+
+  lockButton("paymentBtn",true);
+
+  try{
+    const {data,error}=await client.rpc("submit_driver_payment_collection",{
+      p_token:token,
+      p_password:driverPassword,
+      p_cash_amount:cash,
+      p_online_amount:online,
+      p_online_method:document.getElementById("onlineMethod").value,
+      p_transaction_reference:document.getElementById("utr").value.trim(),
+      p_payment_proof_url:proof,
+      p_notes:document.getElementById("paymentNotes").value.trim()
+    });
+
+    if(error) throw error;
+
+    if(data===false || data?.success===false){
+      throw new Error(data?.message || "Payment report submission failed.");
+    }
+
+    paymentSubmitted=true;
+    lockPaymentForm();
+
+    showMessage("paymentMessage","Payment report submitted successfully.","success");
+
+  }catch(e){
+    showMessage("paymentMessage",e.message || "Unable to submit payment report.");
+    lockButton("paymentBtn",false);
+  }
+}
+
+try{
+  initSupabase();
+
+  if(!token){
+    showMessage("loginMessage","No delivery token found. Please contact the administrator.");
+    document.getElementById("loginBtn").disabled=true;
+  }
+
+}catch(e){
+  showMessage("loginMessage",e.message);
+  document.getElementById("loginBtn").disabled=true;
+}
+</script>
+
+</body>
+</html>
