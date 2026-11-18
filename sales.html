@@ -31,16 +31,20 @@ button{border:0;border-radius:8px;padding:12px 18px;cursor:pointer;font-size:14p
 .secondary{background:#e7f0f6;color:#17374a}
 .whatsapp{background:#20a65a;color:white}
 .remove{background:#ffe8e8;color:#b42318;padding:8px 12px}
+.warning{background:#fff5dc;color:#805500;padding:12px;border-radius:8px;margin:12px 0}
 button:disabled{opacity:.5;cursor:not-allowed}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .summary{background:#f0f8fc;border-radius:12px;padding:16px;margin-top:15px}
 .summary-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0}
 .grand{font-size:21px;font-weight:bold;color:#1477b8;border-top:1px solid #cbdde8;padding-top:12px}
-.status{padding:12px;border-radius:8px;margin:12px 0;display:none}
+.status{padding:12px;border-radius:8px;margin:12px 0;display:none;white-space:pre-wrap}
 .error{background:#ffe8e8;color:#a32121}
 .success{background:#e4f7ed;color:#126b40}
 .stock-info{margin-top:10px;padding:11px;background:#e7f7ed;border:1px solid #b9dfc6;border-radius:8px;color:#17613a;line-height:1.6}
 .stock-info.out{background:#fff0ef;border-color:#efc4c0;color:#a32121}
+.driver-item,.history-item{border:1px solid #dce6ed;border-radius:10px;padding:14px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.driver-item strong,.history-item strong{color:#123d55}
+.driver-actions{display:flex;gap:8px;flex-wrap:wrap}
 #invoice{display:none}
 .invoice-paper{background:white;border:1px solid #d4dce2;padding:25px;max-width:850px;margin:auto;color:#222}
 .invoice-header{text-align:center;border-bottom:3px solid #1477b8;padding-bottom:15px}
@@ -56,12 +60,11 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .invoice-totals div{display:flex;justify-content:space-between;padding:6px;border-bottom:1px solid #eee}
 .invoice-totals .final{font-size:18px;font-weight:bold;color:#1477b8}
 .invoice-bottom{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-top:22px}
-#qrcode{padding:8px;background:white;display:inline-block}
+#qrcode{padding:8px;background:white;display:inline-block;min-height:20px}
 .invoice-footer{text-align:center;border-top:1px solid #ddd;margin-top:20px;padding-top:12px}
 .small{font-size:12px;color:#607888}
-.history-item{border:1px solid #dce6ed;border-radius:10px;padding:14px;margin:10px 0;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.history-item strong{color:#123d55}
 .empty{padding:20px;text-align:center;color:#607888}
+
 @media(max-width:650px){
  .grid{grid-template-columns:1fr}
  header h2{font-size:18px}
@@ -72,18 +75,52 @@ button:disabled{opacity:.5;cursor:not-allowed}
  .invoice-bottom{flex-direction:column;align-items:flex-start}
  .invoice-paper th,.invoice-paper td{padding:5px;font-size:11px}
 }
+
+/* PRINT FIX: Print only the invoice */
 @media print{
  @page{size:A4;margin:10mm}
- body{background:white}
- header,.container,.no-print{display:none!important}
- #invoice{display:block!important;margin:0;padding:0;box-shadow:none}
- .invoice-paper{border:0;max-width:none;padding:0}
+ body{background:white!important;color:#222!important;margin:0!important}
+ body *{visibility:hidden!important}
+ #invoice,#invoice *{visibility:visible!important}
+ header,.no-print{display:none!important}
+ .container{
+  display:block!important;
+  max-width:none!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+ }
+ #invoice{
+  display:block!important;
+  position:absolute!important;
+  left:0!important;
+  top:0!important;
+  width:100%!important;
+  margin:0!important;
+  padding:0!important;
+  background:white!important;
+  box-shadow:none!important;
+ }
+ .invoice-paper{
+  display:block!important;
+  visibility:visible!important;
+  width:100%!important;
+  max-width:none!important;
+  border:0!important;
+  padding:0!important;
+  color:#222!important;
+ }
+ .invoice-paper table{width:100%!important;border-collapse:collapse!important}
+ .invoice-paper th,.invoice-paper td{
+  color:#222!important;
+  border:1px solid #999!important;
+ }
+ #qrcode{display:inline-block!important}
 }
 </style>
 </head>
 
 <body>
-
 <header>
  <h2>INDIAN MURI FACTORY</h2>
  <a href="index.html">Back to Dashboard</a>
@@ -91,6 +128,43 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
 <div class="container">
 
+ <!-- DRIVER MANAGEMENT -->
+ <div class="card">
+  <h3>Driver Management</h3>
+  <div id="driverMessage" class="status"></div>
+  <input type="hidden" id="driverId">
+
+  <div class="grid">
+   <div>
+    <label>Driver Name</label>
+    <input id="driverName" placeholder="Enter driver full name">
+   </div>
+   <div>
+    <label>Mobile Number</label>
+    <input id="driverMobile" type="tel" placeholder="Enter mobile number">
+   </div>
+   <div>
+    <label>Driver Password</label>
+    <input id="driverPassword" type="password" minlength="8" placeholder="Minimum 8 characters">
+   </div>
+   <div>
+    <label>Confirm Password (for new driver)</label>
+    <input id="driverPasswordConfirm" type="password" placeholder="Enter password again">
+   </div>
+  </div>
+
+  <p class="small">For an existing driver, leave both password fields empty to keep the current password. Enter a new password in both fields to change it.</p>
+
+  <div class="actions">
+   <button class="green" id="saveDriverBtn" type="button" onclick="saveDriver()">Save Driver</button>
+   <button class="secondary" type="button" onclick="clearDriverForm()">Clear Form</button>
+  </div>
+
+  <h3 style="margin-top:25px">Saved Drivers</h3>
+  <div id="driverList"><div class="empty">Loading drivers...</div></div>
+ </div>
+
+ <!-- SALES -->
  <div class="card">
   <h3>Sales Management</h3>
   <div id="message" class="status"></div>
@@ -98,9 +172,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
   <div class="grid">
    <div>
     <label>Customer</label>
-    <select id="customer">
-     <option value="">Loading customers...</option>
-    </select>
+    <select id="customer"><option value="">Loading customers...</option></select>
    </div>
    <div>
     <label>Invoice Date</label>
@@ -114,7 +186,12 @@ button:disabled{opacity:.5;cursor:not-allowed}
     <label>Customer Address</label>
     <input id="customerAddress" readonly placeholder="Customer address">
    </div>
+   <div>
+    <label>Assign Driver</label>
+    <select id="saleDriver"><option value="">Select Driver (Optional)</option></select>
+   </div>
   </div>
+  <div class="small">Select the driver responsible for this delivery. Driver details will appear on the invoice.</div>
  </div>
 
  <div class="card">
@@ -125,20 +202,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
  <div class="card">
   <h3>Payment & Invoice Summary</h3>
-
   <div class="grid">
-   <div>
-    <label>Discount</label>
-    <input type="number" id="discount" min="0" step="0.01" value="0">
-   </div>
-   <div>
-    <label>Other Charges</label>
-    <input type="number" id="charges" min="0" step="0.01" value="0">
-   </div>
-   <div>
-    <label>Amount Received</label>
-    <input type="number" id="paid" min="0" step="0.01" value="0">
-   </div>
+   <div><label>Discount</label><input type="number" id="discount" min="0" step="0.01" value="0"></div>
+   <div><label>Other Charges</label><input type="number" id="charges" min="0" step="0.01" value="0"></div>
+   <div><label>Amount Received</label><input type="number" id="paid" min="0" step="0.01" value="0"></div>
    <div>
     <label>Payment Method</label>
     <select id="paymentMethod">
@@ -149,10 +216,8 @@ button:disabled{opacity:.5;cursor:not-allowed}
     </select>
    </div>
   </div>
-
   <label>Notes</label>
   <textarea id="notes" placeholder="Additional notes"></textarea>
-
   <div class="summary">
    <div class="summary-row"><span>Subtotal</span><strong id="subtotal">₹0.00</strong></div>
    <div class="summary-row"><span>Discount</span><strong id="discountView">₹0.00</strong></div>
@@ -160,7 +225,6 @@ button:disabled{opacity:.5;cursor:not-allowed}
    <div class="summary-row grand"><span>Grand Total</span><span id="grandTotal">₹0.00</span></div>
    <div class="summary-row"><span>Balance Due</span><strong id="due">₹0.00</strong></div>
   </div>
-
   <div class="actions">
    <button class="green" id="saveBtn" onclick="saveSale()">Save Sale & Generate Invoice</button>
   </div>
@@ -169,32 +233,22 @@ button:disabled{opacity:.5;cursor:not-allowed}
  <!-- INVOICE -->
  <div id="invoice" class="card">
   <div class="invoice-paper">
-
    <div class="invoice-header">
     <h1>INDIAN MURI FACTORY</h1>
     <p>QUALITY MURI MANUFACTURING & SUPPLY</p>
     <h2>SALES INVOICE</h2>
    </div>
-
    <div id="invoiceDetails"></div>
-
    <table>
     <thead>
      <tr>
-      <th>SL</th>
-      <th>Product</th>
-      <th>Weight</th>
-      <th>Bag Color</th>
-      <th>Quantity</th>
-      <th>Rate</th>
-      <th>Total</th>
+      <th>SL</th><th>Product</th><th>Weight</th><th>Bag Color</th>
+      <th>Quantity</th><th>Rate</th><th>Total</th>
      </tr>
     </thead>
     <tbody id="invoiceItems"></tbody>
    </table>
-
    <div id="invoiceTotals" class="invoice-totals"></div>
-
    <div class="invoice-bottom">
     <div>
      <strong>Delivery QR Code</strong>
@@ -203,19 +257,15 @@ button:disabled{opacity:.5;cursor:not-allowed}
     </div>
     <div>
      <p><strong>For INDIAN MURI FACTORY</strong></p>
-     <br><br>
-     __________________________
+     <br><br>__________________________
      <p>Authorized Signature</p>
     </div>
    </div>
-
    <div class="invoice-footer">
     <strong>Thank you for your business!</strong>
     <p class="small">This is a computer-generated sales invoice.</p>
    </div>
-
   </div>
-
   <div class="actions no-print">
    <button class="primary" onclick="window.print()">Print Invoice</button>
    <button class="secondary" onclick="shareInvoice()">Share Invoice</button>
@@ -224,165 +274,325 @@ button:disabled{opacity:.5;cursor:not-allowed}
   </div>
  </div>
 
- <!-- INVOICE HISTORY -->
+ <!-- HISTORY -->
  <div class="card">
   <h3>Invoice History</h3>
-  <p class="small">Recently generated invoices. Select an invoice to view, print or share it again.</p>
-  <div id="historyList">
-   <div class="empty">Loading invoice history...</div>
-  </div>
+  <p class="small">Recently generated invoices. Select an invoice to view or print it again.</p>
+  <div id="historyList"><div class="empty">Loading invoice history...</div></div>
   <button class="secondary" onclick="loadHistory()">Refresh History</button>
  </div>
 
 </div>
 
 <script>
-/* =========================================
-   FACTORY DETAILS
-   নিজের Factory Details এখানে পরিবর্তন করুন
-========================================= */
 const FACTORY = {
  name: "INDIAN MURI FACTORY",
  address: "Enter Factory Full Address Here",
  mobile: "Enter Factory Mobile Number",
- email: "Enter Factory Email (Optional)",
+ email: "",
  gst: "GSTIN: Not Provided"
 };
 
 let db;
-let customers=[];
-let products=[];
-let stockMap={};
-let savedInvoice=null;
-let historyInvoices=[];
+let customers = [];
+let products = [];
+let drivers = [];
+let stockMap = {};
+let savedInvoice = null;
+let historyInvoices = [];
 
-function money(value){
- return "₹"+Number(value||0).toFixed(2);
+function money(value) {
+ return "₹" + Number(value || 0).toFixed(2);
 }
 
-function escapeHTML(value){
- return String(value??"").replace(/[&<>"']/g,c=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+function escapeHTML(value) {
+ return String(value ?? "").replace(/[&<>"']/g, c => ({
+  "&":"&amp;", "<":"&lt;", ">":"&gt;",
+  '"':"&quot;", "'":"&#39;"
  }[c]));
 }
 
-function showMessage(message,type){
- const box=document.getElementById("message");
- box.style.display="block";
- box.className="status "+type;
- box.textContent=message;
+function showMessage(message, type, elementId="message") {
+ const box = document.getElementById(elementId);
+ box.style.display = "block";
+ box.className = "status " + type;
+ box.textContent = message;
 }
 
-function hideMessage(){
- document.getElementById("message").style.display="none";
+function hideMessage(elementId="message") {
+ document.getElementById(elementId).style.display = "none";
 }
 
-function getAddress(c){
+function getAddress(c) {
  return c.full_address || c.address ||
- [c.village,c.post_office,c.police_station,c.district,c.state,c.pin_code]
- .filter(Boolean).join(", ");
+  [c.village,c.post_office,c.police_station,c.district,c.state,c.pin_code]
+   .filter(Boolean).join(", ");
 }
 
-async function init(){
- try{
-  if(!window.AFSONA_CONFIG ||
-     !window.AFSONA_CONFIG.SUPABASE_URL ||
-     !window.AFSONA_CONFIG.SUPABASE_ANON_KEY){
+/* INITIALIZE */
+
+async function init() {
+ try {
+  if (!window.AFSONA_CONFIG ||
+      !window.AFSONA_CONFIG.SUPABASE_URL ||
+      !window.AFSONA_CONFIG.SUPABASE_ANON_KEY) {
    throw new Error("Supabase configuration not found. Check config.js");
   }
 
-  db=window.supabase.createClient(
+  db = window.supabase.createClient(
    window.AFSONA_CONFIG.SUPABASE_URL,
    window.AFSONA_CONFIG.SUPABASE_ANON_KEY
   );
 
-  const {data:sessionData,error:sessionError}=await db.auth.getSession();
-  if(sessionError) throw sessionError;
-  if(!sessionData.session){
+  const {data: sessionData, error: sessionError} =
+   await db.auth.getSession();
+
+  if (sessionError) throw sessionError;
+  if (!sessionData.session) {
    throw new Error("Please login as an approved administrator first.");
   }
 
-  await Promise.all([loadCustomers(),loadProducts(),loadStock()]);
+  await Promise.all([
+   loadCustomers(),
+   loadProducts(),
+   loadStock(),
+   loadDrivers()
+  ]);
 
-  document.getElementById("invoiceDate").value=
+  document.getElementById("invoiceDate").value =
    new Date().toISOString().slice(0,10);
 
   addProductRow();
+  calculate();
   await loadHistory();
 
- }catch(error){
-  showMessage(error.message,"error");
+ } catch(error) {
+  showMessage(error.message || "Page initialization failed.", "error");
  }
 }
 
-async function loadCustomers(){
- const {data,error}=await db
+/* CUSTOMER */
+
+async function loadCustomers() {
+ const {data,error} = await db
   .from("customers")
   .select("id,customer_name,mobile,full_address,address,village,post_office,police_station,district,state,pin_code")
   .order("customer_name");
 
  if(error) throw error;
 
- customers=data||[];
- const select=document.getElementById("customer");
- select.innerHTML='<option value="">Select Customer</option>';
+ customers = data || [];
+ const select = document.getElementById("customer");
+ select.innerHTML = '<option value="">Select Customer</option>';
 
- customers.forEach(c=>{
-  const option=document.createElement("option");
-  option.value=c.id;
-  option.textContent=c.customer_name+" - "+(c.mobile||"");
+ customers.forEach(c => {
+  const option = document.createElement("option");
+  option.value = c.id;
+  option.textContent = c.customer_name + " - " + (c.mobile || "");
   select.appendChild(option);
  });
 }
 
-async function loadProducts(){
- const {data,error}=await db
+document.getElementById("customer").addEventListener("change", function() {
+ const c = customers.find(x => x.id === this.value);
+ document.getElementById("customerMobile").value = c?.mobile || "";
+ document.getElementById("customerAddress").value = c ? getAddress(c) : "";
+});
+
+/* PRODUCTS AND STOCK */
+
+async function loadProducts() {
+ const {data,error} = await db
   .from("finished_products")
   .select("id,product_name,weight_kg,product_type,is_active")
   .order("product_name");
 
  if(error) throw error;
- products=(data||[]).filter(p=>p.is_active!==false);
+ products = (data || []).filter(p => p.is_active !== false);
 }
 
-async function loadStock(){
- const {data,error}=await db
+async function loadStock() {
+ const {data,error} = await db
   .from("finished_stock")
   .select("product_id,current_bags,current_weight_kg");
 
- if(error){
-  console.error("Stock loading error:",error.message);
-  stockMap={};
-  return;
- }
+ if(error) throw error;
 
- stockMap={};
- (data||[]).forEach(s=>{
-  stockMap[s.product_id]={
-   bags:Number(s.current_bags||0),
-   weight:Number(s.current_weight_kg||0)
+ stockMap = {};
+ (data || []).forEach(s => {
+  stockMap[s.product_id] = {
+   bags: Number(s.current_bags || 0),
+   weight: Number(s.current_weight_kg || 0)
   };
  });
 }
 
-document.getElementById("customer").addEventListener("change",function(){
- const c=customers.find(x=>x.id===this.value);
- document.getElementById("customerMobile").value=c?.mobile||"";
- document.getElementById("customerAddress").value=c?getAddress(c):"";
-});
+/* DRIVER MANAGEMENT */
 
-function addProductRow(){
- const row=document.createElement("div");
- row.className="product-row";
+async function loadDrivers() {
+ const {data,error} = await db.rpc("list_factory_drivers");
+ if(error) throw error;
 
- const options=products.map(p=>
+ drivers = data || [];
+
+ const select = document.getElementById("saleDriver");
+ const oldValue = select.value;
+
+ select.innerHTML = '<option value="">Select Driver (Optional)</option>';
+
+ drivers.filter(d => d.is_active).forEach(d => {
+  const option = document.createElement("option");
+  option.value = d.id;
+  option.textContent = d.driver_name + " - " + d.mobile;
+  select.appendChild(option);
+ });
+
+ if(drivers.some(d => d.id === oldValue && d.is_active)) {
+  select.value = oldValue;
+ }
+
+ renderDriverList();
+}
+
+function renderDriverList() {
+ const box = document.getElementById("driverList");
+
+ if(!drivers.length) {
+  box.innerHTML = '<div class="empty">No drivers saved yet.</div>';
+  return;
+ }
+
+ box.innerHTML = drivers.map(d => `
+  <div class="driver-item">
+   <div>
+    <strong>${escapeHTML(d.driver_name)}</strong><br>
+    Mobile: ${escapeHTML(d.mobile)}<br>
+    <span class="small">${d.is_active ? "Active" : "Disabled"}</span>
+   </div>
+   <div class="driver-actions">
+    <button class="secondary" onclick="editDriver('${d.id}')">Edit</button>
+    <button class="${d.is_active ? "remove" : "green"}"
+     onclick="changeDriverStatus('${d.id}',${!d.is_active})">
+     ${d.is_active ? "Disable" : "Activate"}
+    </button>
+   </div>
+  </div>
+ `).join("");
+}
+
+async function saveDriver() {
+ const btn = document.getElementById("saveDriverBtn");
+ hideMessage("driverMessage");
+
+ const id = document.getElementById("driverId").value || null;
+ const name = document.getElementById("driverName").value.trim();
+ const mobile = document.getElementById("driverMobile").value.trim();
+ const password = document.getElementById("driverPassword").value;
+ const confirmPassword = document.getElementById("driverPasswordConfirm").value;
+
+ try {
+  if(!name) throw new Error("Enter driver name.");
+  if(!mobile) throw new Error("Enter driver mobile number.");
+
+  if(!id && password.length < 8) {
+   throw new Error("New driver password must contain at least 8 characters.");
+  }
+
+  if(password || confirmPassword) {
+   if(password !== confirmPassword) {
+    throw new Error("Passwords do not match.");
+   }
+   if(password.length < 8) {
+    throw new Error("Password must contain at least 8 characters.");
+   }
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Saving...";
+
+  const {data,error} = await db.rpc("save_factory_driver", {
+   p_driver_id: id,
+   p_driver_name: name,
+   p_mobile: mobile,
+   p_password: password
+  });
+
+  if(error) throw error;
+  if(!data || !data.success) throw new Error("Driver could not be saved.");
+
+  clearDriverForm();
+  await loadDrivers();
+
+  showMessage("Driver saved successfully.", "success", "driverMessage");
+
+ } catch(error) {
+  showMessage(error.message || "Unable to save driver.", "error", "driverMessage");
+ } finally {
+  btn.disabled = false;
+  btn.textContent = "Save Driver";
+ }
+}
+
+function editDriver(id) {
+ const d = drivers.find(x => x.id === id);
+ if(!d) return;
+
+ document.getElementById("driverId").value = d.id;
+ document.getElementById("driverName").value = d.driver_name;
+ document.getElementById("driverMobile").value = d.mobile;
+ document.getElementById("driverPassword").value = "";
+ document.getElementById("driverPasswordConfirm").value = "";
+
+ document.getElementById("driverName").scrollIntoView({behavior:"smooth"});
+ showMessage("Editing driver. Leave password blank to keep the existing password.",
+  "success", "driverMessage");
+}
+
+function clearDriverForm() {
+ document.getElementById("driverId").value = "";
+ document.getElementById("driverName").value = "";
+ document.getElementById("driverMobile").value = "";
+ document.getElementById("driverPassword").value = "";
+ document.getElementById("driverPasswordConfirm").value = "";
+ hideMessage("driverMessage");
+}
+
+async function changeDriverStatus(id, active) {
+ const action = active ? "activate" : "disable";
+ if(!confirm("Are you sure you want to " + action + " this driver?")) return;
+
+ try {
+  const {data,error} = await db.rpc("set_factory_driver_status", {
+   p_driver_id: id,
+   p_is_active: active
+  });
+
+  if(error) throw error;
+  if(!data || !data.success) throw new Error("Driver status could not be changed.");
+
+  await loadDrivers();
+  showMessage("Driver status updated.", "success", "driverMessage");
+
+ } catch(error) {
+  showMessage(error.message, "error", "driverMessage");
+ }
+}
+
+/* PRODUCT ROWS */
+
+function addProductRow() {
+ const row = document.createElement("div");
+ row.className = "product-row";
+
+ const options = products.map(p =>
   `<option value="${escapeHTML(p.id)}">${escapeHTML(p.product_name)} (${escapeHTML(p.weight_kg)} KG)</option>`
  ).join("");
 
- row.innerHTML=`
+ row.innerHTML = `
   <div class="product-head">
    <strong>Product Item</strong>
-   <button type="button" class="remove" onclick="this.closest('.product-row').remove();calculate()">Remove</button>
+   <button type="button" class="remove"
+    onclick="this.closest('.product-row').remove();calculate()">Remove</button>
   </div>
 
   <label>Finished Product</label>
@@ -390,9 +600,7 @@ function addProductRow(){
    <option value="">Select Product</option>${options}
   </select>
 
-  <div class="stock-info">
-   Available Stock: Select a product
-  </div>
+  <div class="stock-info">Available Stock: Select a product</div>
 
   <div class="grid">
    <div>
@@ -420,158 +628,190 @@ function addProductRow(){
  document.getElementById("productRows").appendChild(row);
 }
 
-function updateRowStock(select){
- const row=select.closest(".product-row");
- const info=row.querySelector(".stock-info");
- const productId=select.value;
+function updateRowStock(select) {
+ const row = select.closest(".product-row");
+ const info = row.querySelector(".stock-info");
+ const id = select.value;
 
- if(!productId){
-  info.className="stock-info";
-  info.textContent="Available Stock: Select a product";
+ if(!id) {
+  info.className = "stock-info";
+  info.textContent = "Available Stock: Select a product";
   return;
  }
 
- const stock=stockMap[productId]||{bags:0,weight:0};
- info.className="stock-info"+(stock.bags<=0?" out":"");
-
- info.innerHTML=`
+ const stock = stockMap[id] || {bags:0,weight:0};
+ info.className = "stock-info" + (stock.bags <= 0 ? " out" : "");
+ info.innerHTML = `
   <strong>Available Stock: ${stock.bags} Bags</strong><br>
   Available Weight: ${stock.weight.toFixed(2)} KG
-  ${stock.bags<=0?"<br><strong>Out of Stock</strong>":""}
+  ${stock.bags <= 0 ? "<br><strong>Out of Stock</strong>" : ""}
  `;
 }
 
-function getRows(){
+function getRows() {
  return [...document.querySelectorAll(".product-row")];
 }
 
-function calculate(){
- let subtotal=0;
+/* CALCULATIONS */
 
- getRows().forEach(row=>{
-  const qty=Number(row.querySelector(".quantity").value)||0;
-  const price=Number(row.querySelector(".price").value)||0;
-  const total=qty*price;
-  row.querySelector(".lineTotal").value=money(total);
-  subtotal+=total;
+function calculate() {
+ let subtotal = 0;
+
+ getRows().forEach(row => {
+  const qty = Number(row.querySelector(".quantity").value) || 0;
+  const price = Number(row.querySelector(".price").value) || 0;
+  const total = qty * price;
+  row.querySelector(".lineTotal").value = money(total);
+  subtotal += total;
  });
 
- const discount=Number(document.getElementById("discount").value)||0;
- const charges=Number(document.getElementById("charges").value)||0;
- const paid=Number(document.getElementById("paid").value)||0;
- const grand=subtotal-discount+charges;
+ const discount = Number(document.getElementById("discount").value) || 0;
+ const charges = Number(document.getElementById("charges").value) || 0;
+ const paid = Number(document.getElementById("paid").value) || 0;
+ const grand = subtotal - discount + charges;
 
- document.getElementById("subtotal").textContent=money(subtotal);
- document.getElementById("discountView").textContent=money(discount);
- document.getElementById("chargesView").textContent=money(charges);
- document.getElementById("grandTotal").textContent=money(grand);
- document.getElementById("due").textContent=money(Math.max(0,grand-paid));
+ document.getElementById("subtotal").textContent = money(subtotal);
+ document.getElementById("discountView").textContent = money(discount);
+ document.getElementById("chargesView").textContent = money(charges);
+ document.getElementById("grandTotal").textContent = money(grand);
+ document.getElementById("due").textContent = money(Math.max(0,grand-paid));
 
  return {subtotal,discount,charges,paid,grand};
 }
 
-["discount","charges","paid"].forEach(id=>{
+["discount","charges","paid"].forEach(id => {
  document.getElementById(id).addEventListener("input",calculate);
 });
 
-function collectItems(){
- const items=[];
+function collectItems() {
+ const items = [];
 
- for(const row of getRows()){
-  const product_id=row.querySelector(".productSelect").value;
-  const quantity_bags=Number(row.querySelector(".quantity").value);
-  const unit_price=Number(row.querySelector(".price").value);
-  const bag_color=row.querySelector(".bagColor").value;
+ for(const row of getRows()) {
+  const product_id = row.querySelector(".productSelect").value;
+  const quantity_bags = Number(row.querySelector(".quantity").value);
+  const unit_price = Number(row.querySelector(".price").value);
+  const bag_color = row.querySelector(".bagColor").value;
 
   if(!product_id) throw new Error("Please select a product in every item.");
-  if(!Number.isInteger(quantity_bags)||quantity_bags<=0)
+  if(!Number.isInteger(quantity_bags) || quantity_bags <= 0)
    throw new Error("Bag quantity must be a positive whole number.");
-  if(!Number.isFinite(unit_price)||unit_price<0)
+  if(!Number.isFinite(unit_price) || unit_price < 0)
    throw new Error("Please enter a valid selling price.");
 
-  const available=(stockMap[product_id]||{bags:0}).bags;
-  if(quantity_bags>available){
-   throw new Error("Insufficient stock! Available: "+available+" bags.");
-  }
+  const available = (stockMap[product_id] || {bags:0}).bags;
+  if(quantity_bags > available)
+   throw new Error("Insufficient stock. Available: " + available + " bags.");
 
   items.push({product_id,quantity_bags,unit_price,bag_color});
  }
 
- if(items.length===0) throw new Error("Please add at least one product.");
+ if(!items.length) throw new Error("Please add at least one product.");
  return items;
 }
 
-async function saveSale(){
- const btn=document.getElementById("saveBtn");
+/* SAVE SALE */
+
+async function saveSale() {
+ const btn = document.getElementById("saveBtn");
  hideMessage();
 
- try{
-  const customer_id=document.getElementById("customer").value;
+ try {
+  const customer_id = document.getElementById("customer").value;
+  const driver_id = document.getElementById("saleDriver").value || null;
+
   if(!customer_id) throw new Error("Please select a customer.");
 
-  const totals=calculate();
-  const items=collectItems();
+  const totals = calculate();
+  const items = collectItems();
 
-  if(totals.discount<0||totals.charges<0||totals.paid<0)
+  if(totals.discount < 0 || totals.charges < 0 || totals.paid < 0)
    throw new Error("Amounts cannot be negative.");
-  if(totals.discount>totals.subtotal)
+  if(totals.discount > totals.subtotal)
    throw new Error("Discount cannot exceed subtotal.");
-  if(totals.paid>totals.grand)
+  if(totals.paid > totals.grand)
    throw new Error("Received amount cannot exceed grand total.");
 
-  btn.disabled=true;
-  btn.textContent="Saving Sale...";
+  btn.disabled = true;
+  btn.textContent = "Saving Sale...";
 
-  const {data,error}=await db.rpc("create_factory_sale",{
-   p_customer_id:customer_id,
-   p_discount:totals.discount,
-   p_other_charges:totals.charges,
-   p_paid_amount:totals.paid,
-   p_payment_method:document.getElementById("paymentMethod").value,
-   p_notes:document.getElementById("notes").value,
-   p_items:items
+  const {data,error} = await db.rpc("create_factory_sale", {
+   p_customer_id: customer_id,
+   p_discount: totals.discount,
+   p_other_charges: totals.charges,
+   p_paid_amount: totals.paid,
+   p_payment_method: document.getElementById("paymentMethod").value,
+   p_notes: document.getElementById("notes").value,
+   p_items: items
   });
 
   if(error) throw error;
-  if(!data||!data.success) throw new Error("Sale could not be saved.");
+  if(!data || !data.success) throw new Error("Sale could not be saved.");
 
-  const customer=customers.find(c=>c.id===customer_id);
-  const invoiceData={
-   id:data.sale_id||data.id||null,
-   invoice_number:data.invoice_number,
-   invoice_date:document.getElementById("invoiceDate").value,
-   qr_token:data.qr_token,
-   total_amount:totals.grand,
-   subtotal:totals.subtotal,
-   discount:totals.discount,
-   other_charges:totals.charges,
-   paid_amount:totals.paid,
-   payment_method:document.getElementById("paymentMethod").value,
-   notes:document.getElementById("notes").value
+  const saleId = data.sale_id || data.id || null;
+  let driver = drivers.find(d => d.id === driver_id) || null;
+  let assignmentWarning = "";
+
+  if(driver_id) {
+   if(!saleId) {
+    assignmentWarning = " Sale saved, but driver assignment could not be confirmed because sale ID was not returned.";
+   } else {
+    const {data:assignData,error:assignError} = await db.rpc(
+     "assign_factory_driver_to_sale",
+     {p_sale_id:saleId,p_driver_id:driver_id}
+    );
+
+    if(assignError || !assignData?.success) {
+     assignmentWarning = " Sale saved, but driver assignment failed: " +
+      (assignError?.message || "Unknown error");
+     driver = null;
+    }
+   }
+  }
+
+  const customer = customers.find(c => c.id === customer_id);
+
+  const invoiceData = {
+   id: saleId,
+   invoice_number: data.invoice_number,
+   invoice_date: document.getElementById("invoiceDate").value,
+   qr_token: data.qr_token,
+   total_amount: totals.grand,
+   subtotal: totals.subtotal,
+   discount: totals.discount,
+   other_charges: totals.charges,
+   paid_amount: totals.paid,
+   payment_method: document.getElementById("paymentMethod").value,
+   notes: document.getElementById("notes").value,
+   driver
   };
 
   showInvoice(invoiceData,customer,items,totals);
-  showMessage("Sale saved successfully. Invoice generated.","success");
+
+  showMessage(
+   "Sale saved successfully. Invoice generated." + assignmentWarning,
+   assignmentWarning ? "error" : "success"
+  );
 
   await loadStock();
   await loadHistory();
 
- }catch(error){
-  showMessage(error.message||"Unable to save sale.","error");
- }finally{
-  btn.disabled=false;
-  btn.textContent="Save Sale & Generate Invoice";
+ } catch(error) {
+  showMessage(error.message || "Unable to save sale.", "error");
+ } finally {
+  btn.disabled = false;
+  btn.textContent = "Save Sale & Generate Invoice";
  }
 }
 
-function showInvoice(data,customer,items,totals){
- savedInvoice={
-  data,customer,items,totals
- };
+/* INVOICE */
 
- document.getElementById("invoice").style.display="block";
+function showInvoice(data,customer,items,totals) {
+ savedInvoice = {data,customer,items,totals};
+ document.getElementById("invoice").style.display = "block";
 
- document.getElementById("invoiceDetails").innerHTML=`
+ const driver = data.driver || null;
+
+ document.getElementById("invoiceDetails").innerHTML = `
   <div class="invoice-meta">
    <div>
     <h4>FACTORY DETAILS</h4>
@@ -583,37 +823,47 @@ function showInvoice(data,customer,items,totals){
    </div>
    <div>
     <h4>CUSTOMER DETAILS</h4>
-    <strong>${escapeHTML(customer?.customer_name||"Customer")}</strong><br>
-    Mobile: ${escapeHTML(customer?.mobile||"")}<br>
-    Address: ${escapeHTML(getAddress(customer||{}))}
+    <strong>${escapeHTML(customer?.customer_name || "Customer")}</strong><br>
+    Mobile: ${escapeHTML(customer?.mobile || "")}<br>
+    Address: ${escapeHTML(getAddress(customer || {}))}
    </div>
   </div>
 
   <div class="invoice-meta">
    <div>
-    <strong>Invoice No:</strong> ${escapeHTML(data.invoice_number||"")}<br>
-    <strong>Invoice Date:</strong> ${escapeHTML(data.invoice_date||"")}
+    <strong>Invoice No:</strong> ${escapeHTML(data.invoice_number || "")}<br>
+    <strong>Invoice Date:</strong> ${escapeHTML(data.invoice_date || "")}
    </div>
    <div>
-    <strong>Payment Method:</strong> ${escapeHTML(data.payment_method||"")}<br>
-    <strong>Payment Status:</strong> ${(Number(totals.grand)-Number(totals.paid))<=0?"Paid":"Due"}
+    <strong>Payment Method:</strong> ${escapeHTML(data.payment_method || "")}<br>
+    <strong>Payment Status:</strong>
+    ${Number(totals.grand)-Number(totals.paid) <= 0 ? "Paid" : "Due"}
+   </div>
+  </div>
+
+  <div class="invoice-meta">
+   <div>
+    <h4>DELIVERY DRIVER</h4>
+    <strong>${escapeHTML(driver?.driver_name || "Not Assigned")}</strong><br>
+    Mobile: ${escapeHTML(driver?.mobile || "-")}
    </div>
   </div>
  `;
 
- document.getElementById("invoiceItems").innerHTML=items.map((item,index)=>{
-  const p=products.find(x=>x.id===item.product_id);
+ document.getElementById("invoiceItems").innerHTML = items.map((item,index) => {
+  const p = products.find(x => x.id === item.product_id);
   return `<tr>
    <td>${index+1}</td>
-   <td>${escapeHTML(item.product_name||p?.product_name||"Product")}</td>
-   <td>${escapeHTML(item.weight_kg??p?.weight_kg??"-")} KG</td>
+   <td>${escapeHTML(item.product_name || p?.product_name || "Product")}</td>
+   <td>${escapeHTML(item.weight_kg ?? p?.weight_kg ?? "-")} KG</td>
+   <td>${item.bag_color === "colored" ? "Colored Bag" : "White Bag"}</td>
    <td>${Number(item.quantity_bags)}</td>
    <td>${money(item.unit_price)}</td>
    <td>${money(Number(item.quantity_bags)*Number(item.unit_price))}</td>
   </tr>`;
  }).join("");
 
- document.getElementById("invoiceTotals").innerHTML=`
+ document.getElementById("invoiceTotals").innerHTML = `
   <div><span>Subtotal</span><strong>${money(totals.subtotal)}</strong></div>
   <div><span>Discount</span><strong>${money(totals.discount)}</strong></div>
   <div><span>Other Charges</span><strong>${money(totals.charges)}</strong></div>
@@ -621,173 +871,192 @@ function showInvoice(data,customer,items,totals){
   <div><span>Amount Received</span><strong>${money(totals.paid)}</strong></div>
   <div><span>Balance Due</span><strong>${money(totals.grand-totals.paid)}</strong></div>
  `;
- const qr=document.getElementById("qrcode");
- qr.innerHTML="";
 
- if(data.qr_token){
-  const driverUrl=new URL("driver.html",window.location.href);
+ const qr = document.getElementById("qrcode");
+ qr.innerHTML = "";
+
+ if(data.qr_token) {
+  const driverUrl = new URL("driver.html",window.location.href);
   driverUrl.searchParams.set("token",data.qr_token);
+
   new QRCode(qr,{
    text:driverUrl.toString(),
    width:130,
    height:130
   });
- }else{
-  qr.textContent="Delivery QR unavailable";
+ } else {
+  qr.textContent = "Delivery QR unavailable";
  }
 
  document.getElementById("invoice").scrollIntoView({behavior:"smooth"});
 }
 
-function getInvoiceText(){
+/* SHARE INVOICE */
+
+function getInvoiceText() {
  if(!savedInvoice) return "";
- const {data,customer,items,totals}=savedInvoice;
 
- let textMessage=
- `INDIAN MURI FACTORY\nSALES INVOICE\n`+
- `Invoice: ${data.invoice_number}\n`+
- `Date: ${data.invoice_date}\n\n`+
- `Customer: ${customer?.customer_name||""}\n`+
- `Mobile: ${customer?.mobile||""}\n`+
- `Address: ${getAddress(customer||{})}\n\n`+
- `Products:\n`;
+ const {data,customer,items,totals} = savedInvoice;
+ const driver = data.driver || null;
 
- items.forEach((item,i)=>{
-  const p=products.find(x=>x.id===item.product_id);
-  textMessage+=`${i+1}. ${item.product_name||p?.product_name||"Product"} - ${item.quantity_bags} bags x ${money(item.unit_price)} = ${money(item.quantity_bags*item.unit_price)}\n`;
+ let message =
+  "INDIAN MURI FACTORY\nSALES INVOICE\n" +
+  "Invoice: " + (data.invoice_number || "") + "\n" +
+  "Date: " + (data.invoice_date || "") + "\n\n" +
+  "Customer: " + (customer?.customer_name || "") + "\n" +
+  "Mobile: " + (customer?.mobile || "") + "\n" +
+  "Address: " + getAddress(customer || {}) + "\n" +
+  "Driver: " + (driver?.driver_name || "Not Assigned") + "\n" +
+  "Driver Mobile: " + (driver?.mobile || "-") + "\n\nProducts:\n";
+
+ items.forEach((item,i) => {
+  const p = products.find(x => x.id === item.product_id);
+  message += `${i+1}. ${item.product_name || p?.product_name || "Product"} - ${item.quantity_bags} bags x ${money(item.unit_price)} = ${money(item.quantity_bags*item.unit_price)}\n`;
  });
 
- textMessage+=
- `\nSubtotal: ${money(totals.subtotal)}`+
- `\nDiscount: ${money(totals.discount)}`+
- `\nOther Charges: ${money(totals.charges)}`+
- `\nGrand Total: ${money(totals.grand)}`+
- `\nReceived: ${money(totals.paid)}`+
- `\nBalance Due: ${money(totals.grand-totals.paid)}`+
- `\n\nThank you for your business!`;
+ message +=
+  "\nSubtotal: " + money(totals.subtotal) +
+  "\nDiscount: " + money(totals.discount) +
+  "\nOther Charges: " + money(totals.charges) +
+  "\nGrand Total: " + money(totals.grand) +
+  "\nReceived: " + money(totals.paid) +
+  "\nBalance Due: " + money(totals.grand-totals.paid) +
+  "\n\nThank you for your business!";
 
- return textMessage;
+ return message;
 }
 
-async function shareInvoice(){
+async function shareInvoice() {
  if(!savedInvoice) return;
+ const message = getInvoiceText();
 
- const textMessage=getInvoiceText();
-
- if(navigator.share){
-  try{
-   await navigator.share({
-    title:"INDIAN MURI FACTORY - Invoice",
-    text:textMessage
-   });
-  }catch(error){
-   if(error.name!=="AbortError") alert("Unable to share invoice.");
+ if(navigator.share) {
+  try {
+   await navigator.share({title:"INDIAN MURI FACTORY Invoice",text:message});
+  } catch(error) {
+   if(error.name !== "AbortError") alert("Unable to share invoice.");
   }
- }else{
-  try{
-   await navigator.clipboard.writeText(textMessage);
-   alert("Invoice details copied. You can paste and share them.");
-  }catch(error){
+ } else {
+  try {
+   await navigator.clipboard.writeText(message);
+   alert("Invoice details copied.");
+  } catch(error) {
    alert("Sharing is not supported on this browser.");
   }
  }
 }
- function shareWhatsApp(){
+
+function shareWhatsApp() {
  if(!savedInvoice) return;
- const textMessage=encodeURIComponent(getInvoiceText());
- window.open("https://wa.me/?text="+textMessage,"_blank");
+ window.open("https://wa.me/?text="+encodeURIComponent(getInvoiceText()),"_blank");
 }
 
-async function loadHistory(){
- const box=document.getElementById("historyList");
- box.innerHTML='<div class="empty">Loading invoice history...</div>';
+/* INVOICE HISTORY */
+ async function loadHistory() {
+ const box = document.getElementById("historyList");
+ box.innerHTML = '<div class="empty">Loading invoice history...</div>';
 
- try{
-  const {data,error}=await db
+ try {
+  const {data,error} = await db
    .from("sales")
-   .select("id,invoice_number,invoice_date,total_amount,subtotal,discount,other_charges,paid_amount,payment_method,customer_id,qr_token,notes,created_at")
+   .select("id,invoice_number,invoice_date,total_amount,subtotal,discount,other_charges,paid_amount,payment_method,customer_id,driver_id,qr_token,notes,created_at")
    .order("created_at",{ascending:false})
    .limit(50);
 
   if(error) throw error;
 
-  historyInvoices=data||[];
+  historyInvoices = data || [];
 
-  if(historyInvoices.length===0){
-   box.innerHTML='<div class="empty">No invoices found.</div>';
+  if(!historyInvoices.length) {
+   box.innerHTML = '<div class="empty">No invoices found.</div>';
    return;
   }
-  box.innerHTML=historyInvoices.map(s=>{
-   const c=customers.find(x=>x.id===s.customer_id);
+
+  box.innerHTML = historyInvoices.map(s => {
+   const c = customers.find(x => x.id === s.customer_id);
+   const d = drivers.find(x => x.id === s.driver_id);
+
    return `
     <div class="history-item">
      <div>
       <strong>${escapeHTML(s.invoice_number)}</strong><br>
-      <span class="small">${escapeHTML(s.invoice_date||"")}</span><br>
-      ${escapeHTML(c?.customer_name||"Customer")}<br>
+      <span class="small">${escapeHTML(s.invoice_date || "")}</span><br>
+      ${escapeHTML(c?.customer_name || "Customer")}<br>
+      Driver: ${escapeHTML(d?.driver_name || "Not assigned")}<br>
       <strong>${money(s.total_amount)}</strong>
-     </div>
+      </div>
      <button class="primary" onclick="openHistoryInvoice('${s.id}')">View Invoice</button>
     </div>
    `;
   }).join("");
 
- }catch(error){
-  box.innerHTML='<div class="empty">Could not load invoice history: '+escapeHTML(error.message)+'</div>';
+ } catch(error) {
+  box.innerHTML = '<div class="empty">Could not load invoice history: ' +
+   escapeHTML(error.message) + '</div>';
  }
 }
 
-async function openHistoryInvoice(saleId){
- try{
-  const sale=historyInvoices.find(s=>s.id===saleId);
+async function openHistoryInvoice(saleId) {
+ try {
+  const sale = historyInvoices.find(s => s.id === saleId);
   if(!sale) throw new Error("Invoice not found.");
 
-  const {data:itemsData,error}=await db
+  const {data:itemsData,error} = await db
    .from("sale_items")
    .select("product_id,quantity_bags,unit_price,bag_color")
    .eq("sale_id",saleId);
 
   if(error) throw error;
 
-  const customer=customers.find(c=>c.id===sale.customer_id);
-  if(!customer) throw new Error("Customer details not found. Please refresh the page.");
+  const customer = customers.find(c => c.id === sale.customer_id);
+  if(!customer) throw new Error("Customer details not found.");
 
-  const items=(itemsData||[]).map(item=>({
-   ...item,
-   product_name:products.find(p=>p.id===item.product_id)?.product_name||"Product",
-   weight_kg:products.find(p=>p.id===item.product_id)?.weight_kg||"-"
-  }));
+  const driver = drivers.find(d => d.id === sale.driver_id) || null;
 
-  const subtotal=Number(sale.subtotal??items.reduce((sum,i)=>sum+Number(i.quantity_bags)*Number(i.unit_price),0));
-  const discount=Number(sale.discount||0);
-  const charges=Number(sale.other_charges||0);
-  const grand=Number(sale.total_amount||subtotal-discount+charges);
-  const paid=Number(sale.paid_amount||0);
+  const items = (itemsData || []).map(item => {
+   const p = products.find(x => x.id === item.product_id);
+   return {
+    ...item,
+    product_name: p?.product_name || "Product",
+    weight_kg: p?.weight_kg || "-"
+   };
+  });
+  const subtotal = Number(sale.subtotal ??
+   items.reduce((sum,i) => sum + Number(i.quantity_bags)*Number(i.unit_price),0));
+  const discount = Number(sale.discount || 0);
+  const charges = Number(sale.other_charges || 0);
+  const grand = Number(sale.total_amount || subtotal-discount+charges);
+  const paid = Number(sale.paid_amount || 0);
 
-  showInvoice(sale,customer,items,{
+  showInvoice({...sale,driver},customer,items,{
    subtotal,discount,charges,grand,paid
   });
-  }catch(error){
-  showMessage("Unable to open invoice: "+error.message,"error");
+
+ } catch(error) {
+  showMessage("Unable to open invoice: " + error.message,"error");
  }
 }
 
-function newSale(){
+/* NEW SALE */
+
+function newSale() {
  if(!confirm("Start a new sale?")) return;
 
- document.getElementById("customer").value="";
- document.getElementById("customerMobile").value="";
- document.getElementById("customerAddress").value="";
- document.getElementById("productRows").innerHTML="";
- document.getElementById("discount").value=0;
- document.getElementById("charges").value=0;
- document.getElementById("paid").value=0;
- document.getElementById("notes").value="";
- document.getElementById("invoice").style.display="none";
- document.getElementById("invoiceDate").value=new Date().toISOString().slice(0,10);
+ document.getElementById("customer").value = "";
+ document.getElementById("customerMobile").value = "";
+ document.getElementById("customerAddress").value = "";
+ document.getElementById("saleDriver").value = "";
+ document.getElementById("productRows").innerHTML = "";
+ document.getElementById("discount").value = 0;
+ document.getElementById("charges").value = 0;
+ document.getElementById("paid").value = 0;
+ document.getElementById("notes").value = "";
+ document.getElementById("invoice").style.display = "none";
+ document.getElementById("invoiceDate").value =
+  new Date().toISOString().slice(0,10);
 
  hideMessage();
- savedInvoice=null;
+ savedInvoice = null;
  addProductRow();
  calculate();
  window.scrollTo({top:0,behavior:"smooth"});
@@ -795,6 +1064,7 @@ function newSale(){
 
 init();
 </script>
-
+</body>
+</html>
 </body>
 </html>
