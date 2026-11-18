@@ -280,7 +280,7 @@ async function submitDelivery(){
   const online=Number(document.getElementById("online").value);
   const white=Number(document.getElementById("whiteBags").value);
   const colored=Number(document.getElementById("coloredBags").value);
-  const transactionId=document.getElementById("transactionId").value.trim();
+  const transactionId=null;
 
   if(!driverName) throw new Error("Please enter driver name.");
 
@@ -293,8 +293,6 @@ async function submitDelivery(){
   if(cash+online>Number(invoice.total_amount))
    throw new Error("Total collection cannot exceed invoice amount.");
 
-  if(online>0&&!transactionId)
-   throw new Error("Please enter the online transaction ID.");
 
   const returns=[];
 
