@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1477b8">
+<title>Driver Delivery - INDIAN MURI FACTORY</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#edf3f7;color:#17374a}
+header{background:linear-gradient(120deg,#123d55,#1477b8);color:white;padding:20px}
+header h2{margin:0;font-size:21px}
+.container{max-width:850px;margin:22px auto;padding:0 14px}
+.card{background:white;padding:20px;border-radius:14px;margin-bottom:18px;box-shadow:0 4px 16px #18374a12}
+h3{color:#1477b8;margin:0 0 15px}
+label{display:block;font-weight:bold;margin:12px 0 6px}
+input,textarea{width:100%;padding:12px;border:1px solid #ccd9e2;border-radius:8px;font-size:15px}
+textarea{min-height:75px}
+button{padding:13px 18px;border:0;border-radius:8px;font-size:15px;font-weight:bold;cursor:pointer}
+.primary{background:#1477b8;color:white}
+.green{background:#15965d;color:white}
+button:disabled{opacity:.5}
+.status{padding:12px;border-radius:8px;margin:12px 0;display:none}
+.error{background:#ffe8e8;color:#a32121}
+.success{background:#e4f7ed;color:#126b40}
+.info{background:#edf6fc;padding:14px;border-radius:10px;margin:12px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.item{border:1px solid #dce6ed;padding:14px;border-radius:10px;margin:10px 0}
+.small{font-size:13px;color:#607888}
+#deliverySection{display:none}
+@media(max-width:600px){.grid{grid-template-columns:1fr}.card{padding:15px}}
+</style>
+</head>
+
+<body>
+
+<header>
+ <h2>INDIAN MURI FACTORY</h2>
+ <p>Driver Delivery Portal</p>
+</header>
+
+<div class="container">
+
+ <div id="message" class="status"></div>
+
+ <div class="card" id="loginSection">
+  <h3>Driver Verification</h3>
+  <p class="small">Enter your delivery password to access the invoice.</p>
+
+  <label>Driver Password</label>
+  <input type="password" id="driverPassword" placeholder="Enter driver password">
+
+  <button class="primary" id="verifyBtn" onclick="verifyDriver()">
+   Verify & Open Invoice
+  </button>
+ </div>
+
+ <div id="deliverySection">
+
+  <div class="card">
+   <h3>Invoice Details</h3>
+   <div class="info" id="invoiceInfo"></div>
+   <h3>Products to Deliver</h3>
+   <div id="invoiceItems"></div>
+  </div>
+
+  <div class="card">
+   <h3>Driver Information</h3>
+   <label>Driver Name</label>
+   <input id="driverName" placeholder="Enter driver name">
+  </div>
+
+  <div class="card">
+   <h3>Payment Collection</h3>
+
+   <div class="grid">
+    <div>
+     <label>Cash Received (₹)</label>
+     <input type="number" id="cash" min="0" step="0.01" value="0">
+    </div>
+    <div>
+     <label>Online Received (₹)</label>
+     <input type="number" id="online" min="0" step="0.01" value="0">
+    </div>
+   </div>
+
+   <label>Online Transaction ID</label>
+   <input id="transactionId" placeholder="Enter transaction reference">
+   <p class="small">Enter the transaction ID if online payment was received.</p>
+  </div>
+
+  <div class="card">
+   <h3>Empty Bag Returns</h3>
+   <div class="grid">
+    <div>
+     <label>White Bags Returned</label>
+     <input type="number" id="whiteBags" min="0" step="1" value="0">
+    </div>
+    <div>
+     <label>Colored Bags Returned</label>
+     <input type="number" id="coloredBags" min="0" step="1" value="0">
+    </div>
+   </div>
+  </div>
+
+  <div class="card">
+   <h3>Returned Muri Products</h3>
+   <p class="small">Enter the number of bags returned for each product.</p>
+   <div id="returnItems"></div>
+  </div>
+
+  <div class="card">
+   <h3>Delivery Notes</h3>
+   <textarea id="notes" placeholder="Enter delivery remarks, shortages or other details"></textarea>
+
+   <div class="info">
+    <strong>Important:</strong>
+    Your submission will remain pending until the factory administrator reviews and approves it.
+   </div>
+
+   <button class="green" id="submitBtn" onclick="submitDelivery()">
+    Submit Delivery Report
+   </button>
+  </div>
+
+ </div>
+</div>
+
+<script>
+let db;
+let invoice=null;
+let driverPassword="";
+let token="";
+let productReturns=[];
+
+function showMessage(message,type){
+ const box=document.getElementById("message");
+ box.style.display="block";
+ box.className="status "+type;
+ box.textContent=message;
+}
+
+function escapeHTML(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function money(value){
+ return "₹"+Number(value||0).toFixed(2);
+}
+
+function init(){
+ try{
+  if(!window.AFSONA_CONFIG ||
+     !window.AFSONA_CONFIG.SUPABASE_URL ||
+     !window.AFSONA_CONFIG.SUPABASE_ANON_KEY){
+   throw new Error("Supabase configuration not found.");
+  }
+
+  db=window.supabase.createClient(
+   window.AFSONA_CONFIG.SUPABASE_URL,
+   window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  token=new URLSearchParams(window.location.search).get("token");
+
+  if(!token){
+   showMessage("Invalid QR Code. Please scan the invoice QR code again.","error");
+   document.getElementById("loginSection").style.display="none";
+  }
+ }catch(error){
+  showMessage(error.message,"error");
+ }
+}
+
+async function verifyDriver(){
+ const btn=document.getElementById("verifyBtn");
+ const password=document.getElementById("driverPassword").value.trim();
+
+ if(!password){
+  showMessage("Please enter your driver password.","error");
+  return;
+ }
+
+ btn.disabled=true;
+ btn.textContent="Verifying...";
+
+ try{
+  const {data,error}=await db.rpc("get_driver_invoice",{
+   p_token:token,
+   p_password:password
+  });
+
+  if(error) throw error;
+  if(!data) throw new Error("Invoice could not be found.");
+
+  invoice=data;
+  driverPassword=password;
+
+  displayInvoice();
+
+  document.getElementById("loginSection").style.display="none";
+  document.getElementById("deliverySection").style.display="block";
+
+  showMessage("Invoice verified successfully.","success");
+
+ }catch(error){
+  showMessage(error.message||"Verification failed.","error");
+ }finally{
+  btn.disabled=false;
+  btn.textContent="Verify & Open Invoice";
+ }
+}
+
+function displayInvoice(){
+ document.getElementById("invoiceInfo").innerHTML=`
+  <p><strong>Invoice Number:</strong> ${escapeHTML(invoice.invoice_number)}</p>
+  <p><strong>Invoice Date:</strong> ${escapeHTML(invoice.invoice_date)}</p>
+  <p><strong>Customer:</strong> ${escapeHTML(invoice.customer_name)}</p>
+  <p><strong>Mobile:</strong> ${escapeHTML(invoice.mobile)}</p>
+  <p><strong>Delivery Address:</strong> ${escapeHTML(invoice.address)}</p>
+  <p><strong>Invoice Total:</strong> ${money(invoice.total_amount)}</p>
+ `;
+
+ document.getElementById("invoiceItems").innerHTML=
+  (invoice.items||[]).map(item=>`
+   <div class="item">
+    <strong>${escapeHTML(item.product_name)}</strong>
+    <p>Weight: ${escapeHTML(item.weight_kg)} KG</p>
+    <p>Quantity: ${Number(item.quantity_bags)} Bags</p>
+    <p>Bag Color: ${item.bag_color==="white"?"White":"Colored"}</p>
+   </div>
+  `).join("");
+
+ const uniqueProducts=new Map();
+
+ (invoice.items||[]).forEach(item=>{
+  if(!uniqueProducts.has(item.product_id)){
+   uniqueProducts.set(item.product_id,{
+    product_id:item.product_id,
+    product_name:item.product_name,
+    weight_kg:item.weight_kg,
+    sold:0
+   });
+  }
+  uniqueProducts.get(item.product_id).sold+=Number(item.quantity_bags);
+ });
+
+ productReturns=[...uniqueProducts.values()];
+
+ document.getElementById("returnItems").innerHTML=
+  productReturns.map((item,index)=>`
+   <div class="item">
+    <strong>${escapeHTML(item.product_name)} (${escapeHTML(item.weight_kg)} KG)</strong>
+    <p class="small">Sold: ${item.sold} bags</p>
+    <label>Returned Bags</label>
+    <input
+     type="number"
+     min="0"
+     max="${item.sold}"
+     step="1"
+     value="0"
+     class="returnQty"
+     data-index="${index}">
+   </div>
+  `).join("");
+}
+
+async function submitDelivery(){
+ const btn=document.getElementById("submitBtn");
+
+ try{
+  const driverName=document.getElementById("driverName").value.trim();
+  const cash=Number(document.getElementById("cash").value);
+  const online=Number(document.getElementById("online").value);
+  const white=Number(document.getElementById("whiteBags").value);
+  const colored=Number(document.getElementById("coloredBags").value);
+  const transactionId=document.getElementById("transactionId").value.trim();
+
+  if(!driverName) throw new Error("Please enter driver name.");
+
+  if([cash,online,white,colored].some(v=>!Number.isFinite(v)||v<0))
+   throw new Error("Please enter valid positive amounts and quantities.");
+
+  if(!Number.isInteger(white)||!Number.isInteger(colored))
+   throw new Error("Bag return quantities must be whole numbers.");
+
+  if(cash+online>Number(invoice.total_amount))
+   throw new Error("Total collection cannot exceed invoice amount.");
+
+  if(online>0&&!transactionId)
+   throw new Error("Please enter the online transaction ID.");
+
+  const returns=[];
+
+  document.querySelectorAll(".returnQty").forEach(input=>{
+   const index=Number(input.dataset.index);
+   const qty=Number(input.value);
+
+   if(!Number.isInteger(qty)||qty<0||qty>productReturns[index].sold){
+    throw new Error("Invalid returned quantity for "+productReturns[index].product_name);
+   }
+
+   if(qty>0){
+    returns.push({
+     product_id:productReturns[index].product_id,
+     returned_bags:qty
+    });
+   }
+  });
+
+  if(!confirm("Submit this delivery report for admin approval?"))
+   return;
+
+  btn.disabled=true;
+  btn.textContent="Submitting...";
+
+  const {data,error}=await db.rpc("submit_driver_delivery",{
+   p_token:token,
+   p_password:driverPassword,
+   p_driver_name:driverName,
+   p_cash_received:cash,
+   p_online_received:online,
+   p_transaction_id:transactionId,
+   p_white_bags_returned:white,
+   p_color_bags_returned:colored,
+   p_returns:returns,
+   p_notes:document.getElementById("notes").value
+  });
+
+  if(error) throw error;
+  if(!data||!data.success) throw new Error("Submission failed.");
+
+  document.getElementById("deliverySection").innerHTML=`
+   <div class="card">
+    <h3>Delivery Report Submitted</h3>
+    <div class="info">
+     <h2 style="color:#15965d">Submission Successful</h2>
+     <p>Invoice: ${escapeHTML(invoice.invoice_number)}</p>
+     <p>Status: <strong>Pending Admin Approval</strong></p>
+     <p>Your delivery report has been sent to the factory administrator.</p>
+    </div>
+   </div>
+  `;
+
+  driverPassword="";
+  document.getElementById("driverPassword").value="";
+
+ }catch(error){
+  showMessage(error.message||"Unable to submit delivery report.","error");
+ }finally{
+  btn.disabled=false;
+  btn.textContent="Submit Delivery Report";
+ }
+}
+
+init();
+</script>
+</body>
+</html>
