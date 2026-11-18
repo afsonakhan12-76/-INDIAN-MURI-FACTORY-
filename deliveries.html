@@ -1,0 +1,359 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>INDIAN MURI FACTORY | Delivery Portal</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;font-family:Arial,sans-serif;color:#fff;
+ background:linear-gradient(135deg,#10251d,#153c31,#071b16);
+ min-height:100vh;padding:18px
+}
+.container{max-width:850px;margin:auto}
+header{text-align:center;padding:20px}
+header h1{font-size:25px;margin:5px}
+header p{color:#b9d7c8}
+.card{
+ background:rgba(255,255,255,.09);
+ border:1px solid rgba(255,255,255,.15);
+ border-radius:16px;padding:18px;margin:15px 0
+}
+h2{font-size:19px;margin-top:0;color:#a8f0c4}
+input,select,textarea{
+ width:100%;padding:12px;margin:7px 0 13px;
+ border-radius:9px;border:1px solid #78988a;
+ background:#10271f;color:white;font-size:15px
+}
+button{
+ width:100%;padding:13px;border:0;border-radius:9px;
+ background:#20b875;color:#062217;font-weight:bold;
+ font-size:15px;margin:5px 0;cursor:pointer
+}
+button.secondary{background:#d8e9df}
+button.danger{background:#dc6b62;color:white}
+.hidden{display:none}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.info{
+ background:#0c241b;padding:12px;border-radius:9px;
+ margin:7px 0;overflow-wrap:anywhere
+}
+.info b{color:#9de9bb}
+table{width:100%;border-collapse:collapse;font-size:13px}
+td,th{padding:9px;border-bottom:1px solid #557366;text-align:left}
+.notice{color:#ffd88b;font-size:13px}
+#reader{background:white;border-radius:10px;overflow:hidden}
+@media(max-width:500px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+<h1>🏭 INDIAN MURI FACTORY</h1>
+<p>Delivery & Collection Portal</p>
+</header>
+
+<section class="card" id="scanSection">
+<h2>📷 Scan Invoice QR Code</h2>
+<div id="reader"></div>
+<button onclick="startScanner()">Start Scanner</button>
+<button class="secondary" onclick="stopScanner()">Stop Scanner</button>
+<p class="notice">Scan the QR code printed on the customer invoice.</p>
+</section>
+
+<section class="card hidden" id="passwordSection">
+<h2>🔐 Delivery Portal Security</h2>
+<p>Enter Delivery Password</p>
+<input type="password" id="deliveryPassword" placeholder="Delivery Password">
+<button onclick="unlockPortal()">Unlock Delivery Portal</button>
+<p id="passwordMessage" class="notice"></p>
+</section>
+
+<section class="card hidden" id="invoiceSection">
+<h2>Customer & Invoice Details</h2>
+<div id="invoiceDetails"></div>
+
+<div class="card">
+<h2>💰 Payment Collection</h2>
+<label>Today's Payment (₹)</label>
+<input type="number" id="paymentAmount" min="0" step="0.01" placeholder="Enter amount received">
+<label>Payment Method</label>
+<select id="paymentMethod">
+<option value="cash">Cash</option>
+<option value="upi">UPI</option>
+<option value="bank">Bank Transfer</option>
+</select>
+<button onclick="savePayment()">Save Payment</button>
+<div id="paymentMessage"></div>
+</div>
+
+<div class="card">
+<h2>🧺 Empty Bag Return</h2>
+<div class="grid">
+<div>
+<label>White Bags Returned</label>
+<input type="number" id="whiteBags" min="0" value="0">
+</div>
+<div>
+<label>Color Bags Returned</label>
+<input type="number" id="colorBags" min="0" value="0">
+</div>
+</div>
+<button onclick="saveBagReturn()">Save Empty Bag Return</button>
+<div id="bagMessage"></div>
+</div>
+
+<div class="card">
+<h2>📦 Muri Return</h2>
+<p class="notice">Enter returned bags separately for each invoice product. The original invoice price will be used.</p>
+<div id="returnItems"></div>
+<button onclick="saveMuriReturn()">Save Muri Return</button>
+<div id="returnMessage"></div>
+</div>
+
+<button class="secondary" onclick="location.reload()">Scan Another Invoice</button>
+</section>
+
+<section class="card hidden" id="adminSection">
+<h2>⚙️ Admin Password Settings</h2>
+<p class="notice">Only an authenticated factory admin can change the portal password.</p>
+<input type="password" id="newPassword" placeholder="New delivery password">
+<button onclick="changePassword()">Update Delivery Password</button>
+<div id="adminMessage"></div>
+</section>
+
+</div>
+
+<script>
+const client = window.supabase.createClient(
+ window.AFSONA_CONFIG.SUPABASE_URL,
+ window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+);
+
+let scanner=null;
+let scannedToken=null;
+let invoiceData=null;
+let portalUnlocked=false;
+
+function el(id){return document.getElementById(id)}
+function show(id){el(id).classList.remove("hidden")}
+function hide(id){el(id).classList.add("hidden")}
+function msg(id,text){el(id).textContent=text}
+
+function randomSafeEqual(a,b){
+ return typeof a==="string" && typeof b==="string" && a===b;
+}
+
+async function startScanner(){
+ try{
+  if(scanner){await scanner.clear();scanner=null}
+  scanner=new Html5Qrcode("reader");
+  await scanner.start(
+   {facingMode:"environment"},
+   {fps:10,qrbox:{width:230,height:230}},
+   async decodedText=>{
+    await stopScanner();
+    await acceptQR(decodedText);
+   },
+   ()=>{}
+  );
+ }catch(e){alert("Camera error: "+e.message)}
+}
+
+async function stopScanner(){
+ if(scanner){
+  try{await scanner.stop();await scanner.clear()}catch(e){}
+  scanner=null;
+ }
+}
+
+function extractToken(text){
+ try{
+  const url=new URL(text);
+  return url.searchParams.get("token");
+ }catch(e){
+  return null;
+ }
+}
+
+async function acceptQR(text){
+ const token=extractToken(text);
+ if(!token || !/^[a-f0-9]{64}$/i.test(token)){
+  alert("Invalid invoice QR code");
+  return;
+ }
+ scannedToken=token;
+ show("passwordSection");
+}
+
+async function sha256(value){
+ const bytes=new TextEncoder().encode(value);
+ const digest=await crypto.subtle.digest("SHA-256",bytes);
+ return Array.from(new Uint8Array(digest))
+  .map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+async function unlockPortal(){
+ const password=el("deliveryPassword").value;
+ if(!password){msg("passwordMessage","Enter password");return}
+
+ const {data,error}=await client.rpc("verify_delivery_password",{
+  p_password:password
+ });
+
+ if(error || !data || data.success!==true){
+  msg("passwordMessage","Incorrect password or access denied");
+  return;
+ }
+
+ portalUnlocked=true;
+ await loadInvoice();
+}
+
+async function loadInvoice(){
+ const tokenHash=await sha256(scannedToken);
+ const {data,error}=await client.rpc("get_invoice_by_qr",{
+  p_token_hash:tokenHash
+ });
+
+ if(error || !data || data.success!==true){
+  alert(error?.message || data?.message || "Invoice unavailable");
+  return;
+ }
+
+ invoiceData=data;
+ show("invoiceSection");
+ show("adminSection");
+ renderInvoice();
+}
+
+function money(v){
+ return "₹"+Number(v||0).toFixed(2);
+}
+
+function renderInvoice(){
+ const c=invoiceData.customer;
+ const s=invoiceData.invoice;
+ const items=invoiceData.items||[];
+
+ let html=`
+ <div class="info"><b>Invoice:</b> ${safe(s.invoice_number)}</div>
+ <div class="info"><b>Date:</b> ${safe(s.invoice_date)}</div>
+ <div class="info"><b>Customer:</b> ${safe(c.customer_name)}</div>
+ <div class="info"><b>Shop:</b> ${safe(c.shop_name)}</div>
+ <div class="info"><b>Mobile:</b> ${safe(c.mobile)}</div>
+ <div class="info"><b>WhatsApp:</b> ${safe(c.whatsapp)}</div>
+ <div class="info"><b>Village:</b> ${safe(c.village)}</div>
+ <div class="info"><b>Post Office:</b> ${safe(c.post_office)}</div>
+ <div class="info"><b>Police Station:</b> ${safe(c.police_station)}</div>
+ <div class="info"><b>District:</b> ${safe(c.district)}</div>
+ <div class="info"><b>PIN:</b> ${safe(c.pin_code)}</div>
+ <div class="info"><b>Address:</b> ${safe(c.address)}</div>
+ <h3>Invoice Products</h3>
+ <table><tr><th>Product</th><th>Bags</th><th>Price</th><th>Total</th></tr>`;
+
+ items.forEach((it,i)=>{
+  html+=`<tr><td>${safe(it.product_name)} (${safe(it.weight_kg)} Kg)</td>
+  <td>${it.quantity_bags}</td><td>${money(it.unit_price)}</td>
+  <td>${money(it.line_total)}</td></tr>`;
+ });
+ html+=`</table>
+ <div class="info"><b>Invoice Total:</b> ${money(s.total_amount)}</div>
+ <div class="info"><b>Invoice Status:</b> ${safe(s.status)}</div>`;
+ el("invoiceDetails").innerHTML=html;
+
+ el("returnItems").innerHTML=items.map((it,i)=>`
+ <div class="info">
+ <b>${safe(it.product_name)} - ${safe(it.weight_kg)} Kg</b><br>
+ Original price per bag: ${money(it.unit_price)}
+ <label>Returned bags</label>
+ <input type="number" min="0" max="${Number(it.quantity_bags)}"
+ id="returned_${i}" value="0">
+ </div>`).join("");
+}
+
+function safe(value){
+ return String(value??"").replace(/[&<>"']/g,ch=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[ch]));
+}
+
+async function savePayment(){
+ if(!portalUnlocked)return;
+ const amount=Number(el("paymentAmount").value);
+ if(!Number.isFinite(amount)||amount<=0){alert("Enter a valid payment amount");return}
+ const {data,error}=await client.rpc("record_delivery_payment",{
+  p_invoice_id:invoiceData.invoice.id,
+  p_amount:amount,
+  p_payment_method:el("paymentMethod").value
+ });
+ if(error){msg("paymentMessage",error.message);return}
+ msg("paymentMessage","Payment saved. Refresh invoice balance to see updated due.");
+ el("paymentAmount").value="";
+}
+
+async function saveBagReturn(){
+ if(!portalUnlocked)return;
+ const white=Number(el("whiteBags").value);
+ const color=Number(el("colorBags").value);
+ if(white<0||color<0||!Number.isInteger(white)||!Number.isInteger(color)){
+  alert("Enter valid bag quantities");return;
+ }
+ const {data,error}=await client.rpc("record_empty_bag_return",{
+  p_invoice_id:invoiceData.invoice.id,
+  p_white_bags:white,
+  p_color_bags:color
+ });
+ if(error){msg("bagMessage",error.message);return}
+ msg("bagMessage","Empty bag return saved.");
+}
+
+async function saveMuriReturn(){
+ if(!portalUnlocked)return;
+ const returns=(invoiceData.items||[]).map((item,i)=>({
+  product_id:item.product_id,
+  quantity_bags:Number(el("returned_"+i).value||0),
+  unit_price:Number(item.unit_price)
+ })).filter(x=>x.quantity_bags>0);
+
+ if(!returns.length){alert("Enter returned muri bags");return}
+
+ const {data,error}=await client.rpc("record_muri_return",{
+  p_invoice_id:invoiceData.invoice.id,
+  p_items:returns
+ });
+ if(error){msg("returnMessage",error.message);return}
+ msg("returnMessage","Muri return saved. Original invoice prices applied.");
+}
+
+async function changePassword(){
+ const password=el("newPassword").value;
+ if(!portalUnlocked){alert("Unlock portal first");return}
+ if(password.length<8){alert("Password must be at least 8 characters");return}
+ const {data,error}=await client.rpc("set_delivery_password",{
+  p_new_password:password
+ });
+ if(error){msg("adminMessage",error.message);return}
+ msg("adminMessage","Password updated successfully.");
+ el("newPassword").value="";
+}
+
+async function checkAdmin(){
+ const {data:{user}}=await client.auth.getUser();
+ if(!user)return;
+ const {data,error}=await client.rpc("is_factory_admin");
+ if(!error && data===true)show("adminSection");
+}
+checkAdmin();
+</script>
+</body>
+</html>
