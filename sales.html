@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1477b8">
+<title>Sales Management - INDIAN MURI FACTORY</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="config.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ font-family:Arial,sans-serif;
+ background:#edf3f7;
+ color:#17374a;
+}
+header{
+ background:linear-gradient(120deg,#123d55,#1477b8);
+ color:white;
+ padding:18px 22px;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ flex-wrap:wrap;
+}
+header h2{margin:0;font-size:22px}
+header a{
+ color:white;text-decoration:none;
+ background:#15965d;padding:10px 15px;
+ border-radius:8px;font-weight:bold;
+}
+.container{max-width:1200px;margin:22px auto;padding:0 14px}
+.card{
+ background:white;border-radius:14px;
+ padding:20px;margin-bottom:18px;
+ box-shadow:0 4px 16px #18374a12;
+}
+h3{margin:0 0 16px;color:#1477b8}
+label{display:block;font-weight:bold;margin:12px 0 6px}
+input,select,textarea{
+ width:100%;padding:12px;border:1px solid #ccd9e2;
+ border-radius:8px;font-size:15px;background:white;
+ color:#17374a;
+}
+textarea{min-height:75px;resize:vertical}
+.grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:14px;
+}
+.product-row{
+ border:1px solid #dce6ed;border-radius:12px;
+ padding:15px;margin:12px 0;background:#f9fcfe;
+}
+.product-head{
+ display:flex;justify-content:space-between;
+ align-items:center;gap:10px;
+}
+.remove{
+ border:0;background:#ffe8e8;color:#b42318;
+ padding:8px 12px;border-radius:7px;font-weight:bold;
+}
+button{
+ border:0;border-radius:8px;padding:12px 18px;
+ cursor:pointer;font-size:15px;font-weight:bold;
+}
+.primary{background:#1477b8;color:white}
+.green{background:#15965d;color:white}
+.secondary{background:#e7f0f6;color:#17374a}
+button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.summary{
+ background:#f0f8fc;border-radius:12px;
+ padding:16px;margin-top:15px;
+}
+.summary-row{
+ display:flex;justify-content:space-between;
+ gap:12px;padding:7px 0;
+}
+.grand{
+ font-size:21px;font-weight:bold;color:#1477b8;
+ border-top:1px solid #cbdde8;padding-top:12px;
+}
+.status{padding:12px;border-radius:8px;margin:12px 0;display:none}
+.error{background:#ffe8e8;color:#a32121}
+.success{background:#e4f7ed;color:#126b40}
+#invoice{display:none}
+.invoice-paper{
+ background:white;border:1px solid #ddd;
+ padding:24px;max-width:800px;margin:auto;color:#222;
+}
+.invoice-paper h2{text-align:center;margin:0 0 5px}
+.invoice-paper table{width:100%;border-collapse:collapse;margin-top:18px}
+.invoice-paper th,.invoice-paper td{
+ border:1px solid #ccc;padding:9px;text-align:left;
+}
+.invoice-paper th{background:#edf4f8}
+.invoice-bottom{
+ display:flex;justify-content:space-between;
+ gap:20px;align-items:center;margin-top:22px;
+}
+#qrcode{padding:8px;background:white;display:inline-block}
+.small{font-size:13px;color:#607888}
+@media(max-width:650px){
+ .grid{grid-template-columns:1fr}
+ header h2{font-size:18px}
+ .card{padding:15px}
+ .invoice-paper{padding:12px}
+ .invoice-bottom{flex-direction:column;align-items:flex-start}
+}
+@media print{
+ body{background:white}
+ header,.container,.no-print{display:none!important}
+ #invoice{display:block!important}
+ .invoice-paper{border:0;max-width:none}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <h2>INDIAN MURI FACTORY</h2>
+ <a href="index.html">Back to Dashboard</a>
+</header>
+
+<div class="container">
+
+ <div class="card">
+  <h3>Sales Management</h3>
+  <div id="message" class="status"></div>
+
+  <div class="grid">
+   <div>
+    <label>Customer</label>
+    <select id="customer">
+     <option value="">Loading customers...</option>
+    </select>
+   </div>
+   <div>
+    <label>Invoice Date</label>
+    <input type="date" id="invoiceDate">
+   </div>
+   <div>
+    <label>Customer Mobile</label>
+    <input id="customerMobile" readonly placeholder="Customer mobile">
+   </div>
+   <div>
+    <label>Customer Address</label>
+    <input id="customerAddress" readonly placeholder="Customer address">
+   </div>
+  </div>
+ </div>
+
+ <div class="card">
+  <h3>Sale Products</h3>
+  <div id="productRows"></div>
+  <button class="secondary" type="button" onclick="addProductRow()">+ Add Product</button>
+ </div>
+
+ <div class="card">
+  <h3>Payment & Invoice Summary</h3>
+
+  <div class="grid">
+   <div>
+    <label>Discount</label>
+    <input type="number" id="discount" min="0" step="0.01" value="0">
+   </div>
+   <div>
+    <label>Other Charges</label>
+    <input type="number" id="charges" min="0" step="0.01" value="0">
+   </div>
+   <div>
+    <label>Amount Received</label>
+    <input type="number" id="paid" min="0" step="0.01" value="0">
+   </div>
+   <div>
+    <label>Payment Method</label>
+    <select id="paymentMethod">
+     <option value="Cash">Cash</option>
+     <option value="Online">Online</option>
+     <option value="Bank Transfer">Bank Transfer</option>
+     <option value="Other">Other</option>
+    </select>
+   </div>
+  </div>
+
+  <label>Notes</label>
+  <textarea id="notes" placeholder="Additional notes"></textarea>
+
+  <div class="summary">
+   <div class="summary-row">
+    <span>Subtotal</span><strong id="subtotal">₹0.00</strong>
+   </div>
+   <div class="summary-row">
+    <span>Discount</span><strong id="discountView">₹0.00</strong>
+   </div>
+   <div class="summary-row">
+    <span>Other Charges</span><strong id="chargesView">₹0.00</strong>
+   </div>
+   <div class="summary-row grand">
+    <span>Grand Total</span><span id="grandTotal">₹0.00</span>
+   </div>
+   <div class="summary-row">
+    <span>Balance Due</span><strong id="due">₹0.00</strong>
+   </div>
+  </div>
+
+  <div class="actions">
+   <button class="green" id="saveBtn" onclick="saveSale()">Save Sale & Generate Invoice</button>
+  </div>
+ </div>
+
+ <div id="invoice" class="card">
+  <div class="invoice-paper">
+   <h2>INDIAN MURI FACTORY</h2>
+   <p style="text-align:center">SALES INVOICE</p>
+   <hr>
+   <div id="invoiceDetails"></div>
+
+   <table>
+    <thead>
+     <tr>
+      <th>Product</th>
+      <th>Weight</th>
+      <th>Bag Color</th>
+      <th>Quantity</th>
+      <th>Rate</th>
+      <th>Total</th>
+     </tr>
+    </thead>
+    <tbody id="invoiceItems"></tbody>
+   </table>
+
+   <div id="invoiceTotals"></div>
+
+   <div class="invoice-bottom">
+    <div>
+     <strong>Delivery QR Code</strong>
+     <p class="small">Scan to open the driver delivery page.</p>
+     <div id="qrcode"></div>
+    </div>
+    <div>
+     <p>Authorized Signature</p>
+     <br><br>
+     ______________________
+    </div>
+   </div>
+   <p class="small">Thank you for your business.</p>
+  </div>
+
+  <div class="actions no-print">
+   <button class="primary" onclick="window.print()">Print Invoice</button>
+   <button class="secondary" onclick="newSale()">New Sale</button>
+  </div>
+ </div>
+
+</div>
+
+<script>
+let db;
+let customers=[];
+let products=[];
+let savedInvoice=null;
+
+function money(value){
+ return "₹"+Number(value||0).toFixed(2);
+}
+
+function showMessage(message,type){
+ const box=document.getElementById("message");
+ box.style.display="block";
+ box.className="status "+type;
+ box.textContent=message;
+}
+
+function hideMessage(){
+ document.getElementById("message").style.display="none";
+}
+
+function getAddress(c){
+ return c.full_address || c.address ||
+ [c.village,c.post_office,c.police_station,c.district,c.state,c.pin_code]
+ .filter(Boolean).join(", ");
+}
+
+async function init(){
+ try{
+  if(!window.AFSONA_CONFIG ||
+     !window.AFSONA_CONFIG.SUPABASE_URL ||
+     !window.AFSONA_CONFIG.SUPABASE_ANON_KEY){
+   throw new Error("Supabase configuration not found. Check config.js");
+  }
+
+  db=window.supabase.createClient(
+   window.AFSONA_CONFIG.SUPABASE_URL,
+   window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  );
+
+  const {data:sessionData,error:sessionError}=await db.auth.getSession();
+  if(sessionError) throw sessionError;
+  if(!sessionData.session){
+   throw new Error("Please login as an approved administrator first.");
+  }
+
+  await Promise.all([loadCustomers(),loadProducts()]);
+
+  document.getElementById("invoiceDate").value=
+   new Date().toISOString().slice(0,10);
+
+  addProductRow();
+ }catch(error){
+  showMessage(error.message,"error");
+ }
+}
+
+async function loadCustomers(){
+ const {data,error}=await db
+  .from("customers")
+  .select("id,customer_name,mobile,full_address,address,village,post_office,police_station,district,state,pin_code")
+  .order("customer_name");
+
+ if(error) throw error;
+
+ customers=data||[];
+ const select=document.getElementById("customer");
+ select.innerHTML='<option value="">Select Customer</option>';
+
+ customers.forEach(c=>{
+  const option=document.createElement("option");
+  option.value=c.id;
+  option.textContent=c.customer_name+" - "+c.mobile;
+  select.appendChild(option);
+ });
+}
+
+async function loadProducts(){
+ const {data,error}=await db
+  .from("finished_products")
+  .select("id,product_name,weight_kg,product_type,is_active")
+  .order("product_name");
+
+ if(error) throw error;
+
+ products=(data||[]).filter(p=>p.is_active!==false);
+}
+
+document.getElementById("customer").addEventListener("change",function(){
+ const c=customers.find(x=>x.id===this.value);
+ document.getElementById("customerMobile").value=c?.mobile||"";
+ document.getElementById("customerAddress").value=c?getAddress(c):"";
+});
+
+function addProductRow(){
+ const row=document.createElement("div");
+ row.className="product-row";
+
+ const options=products.map(p=>
+  `<option value="${p.id}">${escapeHTML(p.product_name)} (${p.weight_kg} KG)</option>`
+ ).join("");
+
+ row.innerHTML=`
+  <div class="product-head">
+   <strong>Product Item</strong>
+   <button type="button" class="remove" onclick="this.closest('.product-row').remove();calculate()">Remove</button>
+  </div>
+  <label>Finished Product</label>
+  <select class="productSelect" onchange="calculate()">
+   <option value="">Select Product</option>${options}
+  </select>
+  <div class="grid">
+   <div>
+    <label>Bag Color</label>
+    <select class="bagColor">
+     <option value="white">White Bag</option>
+     <option value="colored">Colored Bag</option>
+    </select>
+   </div>
+   <div>
+    <label>Number of Bags</label>
+    <input class="quantity" type="number" min="1" step="1" value="1" oninput="calculate()">
+   </div>
+   <div>
+    <label>Selling Price Per Bag</label>
+    <input class="price" type="number" min="0" step="0.01" value="0" oninput="calculate()">
+   </div>
+   <div>
+    <label>Line Total</label>
+    <input class="lineTotal" readonly value="₹0.00">
+   </div>
+  </div>
+ `;
+ document.getElementById("productRows").appendChild(row);
+}
+
+function escapeHTML(value){
+ return String(value??"").replace(/[&<>"']/g,c=>({
+  "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function getRows(){
+ return [...document.querySelectorAll(".product-row")];
+}
+
+function calculate(){
+ let subtotal=0;
+
+ getRows().forEach(row=>{
+  const qty=Number(row.querySelector(".quantity").value)||0;
+  const price=Number(row.querySelector(".price").value)||0;
+  const total=qty*price;
+  row.querySelector(".lineTotal").value=money(total);
+  subtotal+=total;
+ });
+
+ const discount=Number(document.getElementById("discount").value)||0;
+ const charges=Number(document.getElementById("charges").value)||0;
+ const paid=Number(document.getElementById("paid").value)||0;
+ const grand=subtotal-discount+charges;
+
+ document.getElementById("subtotal").textContent=money(subtotal);
+ document.getElementById("discountView").textContent=money(discount);
+ document.getElementById("chargesView").textContent=money(charges);
+ document.getElementById("grandTotal").textContent=money(grand);
+ document.getElementById("due").textContent=money(Math.max(0,grand-paid));
+
+ return {subtotal,discount,charges,paid,grand};
+}
+
+["discount","charges","paid"].forEach(id=>{
+ document.getElementById(id).addEventListener("input",calculate);
+});
+
+function collectItems(){
+ const items=[];
+
+ for(const row of getRows()){
+  const product_id=row.querySelector(".productSelect").value;
+  const quantity_bags=Number(row.querySelector(".quantity").value);
+  const unit_price=Number(row.querySelector(".price").value);
+  const bag_color=row.querySelector(".bagColor").value;
+
+  if(!product_id) throw new Error("Please select a product in every item.");
+  if(!Number.isInteger(quantity_bags)||quantity_bags<=0)
+   throw new Error("Bag quantity must be a positive whole number.");
+  if(!Number.isFinite(unit_price)||unit_price<0)
+   throw new Error("Please enter a valid selling price.");
+
+  items.push({product_id,quantity_bags,unit_price,bag_color});
+ }
+
+ if(items.length===0) throw new Error("Please add at least one product.");
+ return items;
+}
+
+async function saveSale(){
+ const btn=document.getElementById("saveBtn");
+ hideMessage();
+
+ try{
+  const customer_id=document.getElementById("customer").value;
+  if(!customer_id) throw new Error("Please select a customer.");
+
+  const totals=calculate();
+  const items=collectItems();
+
+  if(totals.discount<0||totals.charges<0||totals.paid<0)
+   throw new Error("Amounts cannot be negative.");
+
+  if(totals.discount>totals.subtotal)
+   throw new Error("Discount cannot exceed subtotal.");
+
+  if(totals.paid>totals.grand)
+   throw new Error("Received amount cannot exceed grand total.");
+
+  btn.disabled=true;
+  btn.textContent="Saving Sale...";
+
+  const {data,error}=await db.rpc("create_factory_sale",{
+   p_customer_id:customer_id,
+   p_discount:totals.discount,
+   p_other_charges:totals.charges,
+   p_paid_amount:totals.paid,
+   p_payment_method:document.getElementById("paymentMethod").value,
+   p_notes:document.getElementById("notes").value,
+   p_items:items
+  });
+
+  if(error) throw error;
+  if(!data||!data.success) throw new Error("Sale could not be saved.");
+
+  const customer=customers.find(c=>c.id===customer_id);
+  showInvoice(data,customer,items,totals);
+  showMessage("Sale saved successfully. Invoice generated.","success");
+
+ }catch(error){
+  showMessage(error.message||"Unable to save sale.","error");
+ }finally{
+  btn.disabled=false;
+  btn.textContent="Save Sale & Generate Invoice";
+ }
+}
+
+function showInvoice(data,customer,items,totals){
+ savedInvoice=data;
+
+ document.getElementById("invoice").style.display="block";
+
+ document.getElementById("invoiceDetails").innerHTML=`
+  <p><strong>Invoice Number:</strong> ${escapeHTML(data.invoice_number)}</p>
+  <p><strong>Date:</strong> ${escapeHTML(document.getElementById("invoiceDate").value)}</p>
+  <p><strong>Customer:</strong> ${escapeHTML(customer.customer_name)}</p>
+  <p><strong>Mobile:</strong> ${escapeHTML(customer.mobile)}</p>
+  <p><strong>Address:</strong> ${escapeHTML(getAddress(customer))}</p>
+ `;
+
+ document.getElementById("invoiceItems").innerHTML=items.map(item=>{
+  const p=products.find(x=>x.id===item.product_id);
+  return `<tr>
+   <td>${escapeHTML(p?.product_name||"Product")}</td>
+   <td>${escapeHTML(p?.weight_kg||"-")} KG</td>
+   <td>${item.bag_color==="white"?"White":"Colored"}</td>
+   <td>${item.quantity_bags}</td>
+   <td>${money(item.unit_price)}</td>
+   <td>${money(item.quantity_bags*item.unit_price)}</td>
+  </tr>`;
+ }).join("");
+
+ document.getElementById("invoiceTotals").innerHTML=`
+  <p style="text-align:right">Subtotal: <strong>${money(totals.subtotal)}</strong></p>
+  <p style="text-align:right">Discount: <strong>${money(totals.discount)}</strong></p>
+  <p style="text-align:right">Other Charges: <strong>${money(totals.charges)}</strong></p>
+  <p style="text-align:right;font-size:20px">Grand Total: <strong>${money(totals.grand)}</strong></p>
+  <p style="text-align:right">Amount Received: <strong>${money(totals.paid)}</strong></p>
+  <p style="text-align:right">Balance Due: <strong>${money(totals.grand-totals.paid)}</strong></p>
+ `;
+
+ const driverUrl=new URL("driver.html",window.location.href);
+ driverUrl.searchParams.set("token",data.qr_token);
+
+ const qr=document.getElementById("qrcode");
+ qr.innerHTML="";
+ new QRCode(qr,{
+  text:driverUrl.toString(),
+  width:150,
+  height:150
+ });
+
+ document.getElementById("invoice").scrollIntoView({behavior:"smooth"});
+}
+
+function newSale(){
+ if(!confirm("Start a new sale?")) return;
+ document.getElementById("customer").value="";
+ document.getElementById("customerMobile").value="";
+ document.getElementById("customerAddress").value="";
+ document.getElementById("productRows").innerHTML="";
+ document.getElementById("discount").value=0;
+ document.getElementById("charges").value=0;
+ document.getElementById("paid").value=0;
+ document.getElementById("notes").value="";
+ document.getElementById("invoice").style.display="none";
+ document.getElementById("invoiceDate").value=new Date().toISOString().slice(0,10);
+ hideMessage();
+ addProductRow();
+ calculate();
+}
+
+init();
+</script>
+
+</body>
+</html>
