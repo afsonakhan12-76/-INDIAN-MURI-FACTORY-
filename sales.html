@@ -451,9 +451,7 @@ async function saveInvoice(){
 
   // QR URL contains the random secret, never customer data
   lastInvoiceLink=new URL(
-   "./view-invoice.html?token="+encodeURIComponent(rawToken),
-   location.href
-  ).href;
+  "./driver.html?token="+encodeURIComponent(rawToken)
 
   showSavedInvoice(data,customer,cart.slice(),lastInvoiceLink);
 
