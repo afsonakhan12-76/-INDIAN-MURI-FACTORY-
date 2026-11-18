@@ -267,24 +267,22 @@ async function submitDelivery(){
  const btn=document.getElementById("submitBtn");
 
  try{
-  const driverName=document.getElementById("driverName").value.trim();
   const cash=Number(document.getElementById("cash").value);
   const online=Number(document.getElementById("online").value);
   const white=Number(document.getElementById("whiteBags").value);
   const colored=Number(document.getElementById("coloredBags").value);
-  const transactionId=null;
 
-  if(!driverName) throw new Error("Please enter driver name.");
+  if([cash,online,white,colored].some(v=>!Number.isFinite(v)||v<0)){
+   throw new Error("Please enter valid amounts and quantities.");
+  }
 
-  if([cash,online,white,colored].some(v=>!Number.isFinite(v)||v<0))
-   throw new Error("Please enter valid positive amounts and quantities.");
-
-  if(!Number.isInteger(white)||!Number.isInteger(colored))
+  if(!Number.isInteger(white)||!Number.isInteger(colored)){
    throw new Error("Bag return quantities must be whole numbers.");
+  }
 
-  if(cash+online>Number(invoice.total_amount))
+  if(cash+online>Number(invoice.total_amount)){
    throw new Error("Total collection cannot exceed invoice amount.");
-
+  }
 
   const returns=[];
 
@@ -293,7 +291,7 @@ async function submitDelivery(){
    const qty=Number(input.value);
 
    if(!Number.isInteger(qty)||qty<0||qty>productReturns[index].sold){
-    throw new Error("Invalid returned quantity for "+productReturns[index].product_name);
+    throw new Error("Invalid returned quantity.");
    }
 
    if(qty>0){
@@ -304,8 +302,7 @@ async function submitDelivery(){
    }
   });
 
-  if(!confirm("Submit this delivery report for admin approval?"))
-   return;
+  if(!confirm("Submit this delivery report for admin approval?")) return;
 
   btn.disabled=true;
   btn.textContent="Submitting...";
