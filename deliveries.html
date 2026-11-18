@@ -4,356 +4,646 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>INDIAN MURI FACTORY | Delivery Portal</title>
+<title>Delivery Portal | INDIAN MURI FACTORY</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="./config.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
+:root {
+  --bg:#071b16;
+  --panel:rgba(255,255,255,.09);
+  --border:rgba(255,255,255,.14);
+  --green:#20d69a;
+  --text:#f4fff9;
+  --muted:#a8c5b8;
+  --red:#ff7777;
+}
 *{box-sizing:border-box}
 body{
- margin:0;font-family:Arial,sans-serif;color:#fff;
- background:linear-gradient(135deg,#10251d,#153c31,#071b16);
- min-height:100vh;padding:18px
+  margin:0;background:linear-gradient(135deg,#061812,#123b2c,#071b16);
+  color:var(--text);font-family:Arial,sans-serif;min-height:100vh;
 }
-.container{max-width:850px;margin:auto}
-header{text-align:center;padding:20px}
-header h1{font-size:25px;margin:5px}
-header p{color:#b9d7c8}
+header{
+  padding:20px 15px;text-align:center;
+  background:rgba(0,0,0,.3);border-bottom:1px solid var(--border);
+}
+header h1{margin:0;color:var(--green);font-size:23px}
+header p{margin:7px 0 0;color:var(--muted);font-size:12px}
+main{width:min(1100px,96%);margin:20px auto}
 .card{
- background:rgba(255,255,255,.09);
- border:1px solid rgba(255,255,255,.15);
- border-radius:16px;padding:18px;margin:15px 0
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:17px;padding:17px;margin-bottom:16px;
+  backdrop-filter:blur(15px);
 }
-h2{font-size:19px;margin-top:0;color:#a8f0c4}
+h2{font-size:18px;margin:0 0 14px;color:var(--green)}
+h3{font-size:15px;margin:12px 0}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 5px}
 input,select,textarea{
- width:100%;padding:12px;margin:7px 0 13px;
- border-radius:9px;border:1px solid #78988a;
- background:#10271f;color:white;font-size:15px
+  width:100%;padding:12px;border-radius:10px;
+  border:1px solid var(--border);background:#102c22;
+  color:white;font-size:15px;outline:none;
 }
+textarea{min-height:70px;resize:vertical}
 button{
- width:100%;padding:13px;border:0;border-radius:9px;
- background:#20b875;color:#062217;font-weight:bold;
- font-size:15px;margin:5px 0;cursor:pointer
+  border:0;border-radius:10px;padding:12px 16px;
+  font-weight:bold;background:var(--green);color:#06251a;
+  cursor:pointer;margin:5px 3px 5px 0;
 }
-button.secondary{background:#d8e9df}
-button.danger{background:#dc6b62;color:white}
-.hidden{display:none}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.info{
- background:#0c241b;padding:12px;border-radius:9px;
- margin:7px 0;overflow-wrap:anywhere
+button.secondary{background:#294d40;color:white}
+button.danger{background:#a83e43;color:white}
+button:disabled{opacity:.5;cursor:not-allowed}
+.hidden{display:none!important}
+.muted{color:var(--muted);font-size:13px}
+.status{padding:12px;border-radius:10px;margin:10px 0;background:#183c2e}
+.error{background:#51272b;color:#ffd7d7}
+.success{background:#174c38;color:#baffd9}
+.grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+  gap:10px;
 }
-.info b{color:#9de9bb}
+.stat{
+  background:rgba(0,0,0,.22);padding:13px;border-radius:12px;
+}
+.stat small{display:block;color:var(--muted);font-size:12px}
+.stat strong{display:block;font-size:20px;margin-top:7px}
+.item{
+  border:1px solid var(--border);border-radius:12px;
+  padding:12px;margin:9px 0;background:rgba(0,0,0,.14);
+}
+.item input{margin-top:8px}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>*{flex:1;min-width:130px}
+hr{border:0;border-top:1px solid var(--border);margin:15px 0}
 table{width:100%;border-collapse:collapse;font-size:13px}
-td,th{padding:9px;border-bottom:1px solid #557366;text-align:left}
-.notice{color:#ffd88b;font-size:13px}
-#reader{background:white;border-radius:10px;overflow:hidden}
-@media(max-width:500px){.grid{grid-template-columns:1fr}}
+td,th{padding:9px;border-bottom:1px solid var(--border);text-align:left}
+.table-wrap{overflow-x:auto}
+#reader{max-width:500px;margin:12px auto}
+footer{text-align:center;padding:25px;color:var(--muted);font-size:12px}
 </style>
 </head>
 
 <body>
-<div class="container">
-
 <header>
-<h1>🏭 INDIAN MURI FACTORY</h1>
-<p>Delivery & Collection Portal</p>
+  <h1>INDIAN MURI FACTORY</h1>
+  <p>DELIVERY MANAGEMENT PORTAL</p>
 </header>
 
+<main>
+
+<!-- QR SCANNER -->
 <section class="card" id="scanSection">
-<h2>📷 Scan Invoice QR Code</h2>
-<div id="reader"></div>
-<button onclick="startScanner()">Start Scanner</button>
-<button class="secondary" onclick="stopScanner()">Stop Scanner</button>
-<p class="notice">Scan the QR code printed on the customer invoice.</p>
+  <h2>Scan Invoice QR</h2>
+  <div id="reader"></div>
+  <button onclick="startScanner()">Start QR Scanner</button>
+  <button class="secondary" onclick="stopScanner()">Stop Scanner</button>
+
+  <label>Or Enter Invoice QR Token</label>
+  <input id="manualToken" placeholder="Paste QR token or invoice QR URL">
+  <button onclick="useManualToken()">Continue</button>
+  <div id="scanMessage" class="muted"></div>
 </section>
 
+<!-- PASSWORD -->
 <section class="card hidden" id="passwordSection">
-<h2>🔐 Delivery Portal Security</h2>
-<p>Enter Delivery Password</p>
-<input type="password" id="deliveryPassword" placeholder="Delivery Password">
-<button onclick="unlockPortal()">Unlock Delivery Portal</button>
-<p id="passwordMessage" class="notice"></p>
+  <h2>Delivery Portal Password</h2>
+  <p class="muted">Enter the password provided by the factory administrator.</p>
+  <input id="deliveryPassword" type="password" placeholder="Enter delivery password">
+  <button onclick="unlockPortal()">Unlock Delivery Portal</button>
+  <button class="secondary" onclick="resetPortal()">Cancel</button>
 </section>
 
-<section class="card hidden" id="invoiceSection">
-<h2>Customer & Invoice Details</h2>
-<div id="invoiceDetails"></div>
+<!-- MAIN PORTAL -->
+<div id="portal" class="hidden">
 
-<div class="card">
-<h2>💰 Payment Collection</h2>
-<label>Today's Payment (₹)</label>
-<input type="number" id="paymentAmount" min="0" step="0.01" placeholder="Enter amount received">
-<label>Payment Method</label>
-<select id="paymentMethod">
-<option value="cash">Cash</option>
-<option value="upi">UPI</option>
-<option value="bank">Bank Transfer</option>
-</select>
-<button onclick="savePayment()">Save Payment</button>
-<div id="paymentMessage"></div>
+  <section class="card">
+    <div class="row">
+      <div><h2>Invoice Dashboard</h2></div>
+      <div style="text-align:right">
+        <button class="secondary" onclick="refreshAll()">Refresh</button>
+        <button class="danger" onclick="resetPortal()">Lock Portal</button>
+      </div>
+    </div>
+    <div id="invoiceSummary"></div>
+  </section>
+
+  <section class="card">
+    <h2>Customer Information</h2>
+    <div id="customerDetails"></div>
+    <button class="secondary" onclick="loadCustomerLedger()">Refresh Customer Ledger</button>
+  </section>
+
+  <section class="card">
+    <h2>Invoice Products</h2>
+    <div id="invoiceItems"></div>
+  </section>
+
+  <!-- DELIVERY -->
+  <section class="card">
+    <h2>Create Delivery</h2>
+    <p class="muted">Enter the quantities being sent now. The server checks the remaining invoice quantity.</p>
+    <div id="deliveryFormItems"></div>
+
+    <div class="row">
+      <div>
+        <label>Vehicle Number</label>
+        <input id="vehicleNumber" placeholder="Vehicle number">
+      </div>
+      <div>
+        <label>Driver Name</label>
+        <input id="driverName" placeholder="Driver name">
+      </div>
+    </div>
+    <label>Delivery Notes</label>
+    <textarea id="deliveryNotes" placeholder="Optional notes"></textarea>
+    <button onclick="saveDelivery()">Save Delivery</button>
+  </section>
+
+  <!-- PAYMENT -->
+  <section class="card">
+    <h2>Collect Customer Payment</h2>
+    <div id="paymentSummary"></div>
+
+    <label>Payment Amount (₹)</label>
+    <input id="paymentAmount" type="number" min="0.01" step="0.01" placeholder="Enter amount">
+
+    <label>Payment Method</label>
+    <select id="paymentMethod">
+      <option value="cash">Cash</option>
+      <option value="upi">UPI</option>
+      <option value="bank">Bank</option>
+    </select>
+
+    <label>Reference Number</label>
+    <input id="paymentReference" placeholder="Optional transaction reference">
+
+    <label>Notes</label>
+    <textarea id="paymentNotes" placeholder="Optional notes"></textarea>
+    <button onclick="savePayment()">Save Payment</button>
+  </section>
+
+  <!-- MURI RETURN -->
+  <section class="card">
+    <h2>Muri Return</h2>
+    <p class="muted">Return credit is calculated using the original invoice price.</p>
+    <div id="muriReturnItems"></div>
+    <label>Return Notes</label>
+    <textarea id="muriReturnNotes"></textarea>
+    <button onclick="saveMuriReturn()">Save Muri Return</button>
+  </section>
+
+  <!-- EMPTY BAGS -->
+  <section class="card">
+    <h2>Empty Bag Return</h2>
+    <p class="muted">White and Color bags are counted separately. A completed delivery is required.</p>
+    <div id="bagReturnItems"></div>
+    <label>Return Notes</label>
+    <textarea id="bagReturnNotes"></textarea>
+    <button onclick="saveBagReturn()">Save Empty Bag Return</button>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="card">
+    <h2>Payment History</h2>
+    <div id="paymentHistory"></div>
+  </section>
+
+  <section class="card">
+    <h2>Muri Return History</h2>
+    <div id="muriHistory"></div>
+  </section>
+
+  <section class="card">
+    <h2>Empty Bag Return History</h2>
+    <div id="bagHistory"></div>
+  </section>
+
+  <section class="card">
+    <h2>Delivery History</h2>
+    <div id="deliveryHistory"></div>
+  </section>
+
+  <section class="card">
+    <h2>Customer Complete Ledger</h2>
+    <div id="customerLedger"></div>
+  </section>
+
 </div>
 
-<div class="card">
-<h2>🧺 Empty Bag Return</h2>
-<div class="grid">
-<div>
-<label>White Bags Returned</label>
-<input type="number" id="whiteBags" min="0" value="0">
-</div>
-<div>
-<label>Color Bags Returned</label>
-<input type="number" id="colorBags" min="0" value="0">
-</div>
-</div>
-<button onclick="saveBagReturn()">Save Empty Bag Return</button>
-<div id="bagMessage"></div>
-</div>
-
-<div class="card">
-<h2>📦 Muri Return</h2>
-<p class="notice">Enter returned bags separately for each invoice product. The original invoice price will be used.</p>
-<div id="returnItems"></div>
-<button onclick="saveMuriReturn()">Save Muri Return</button>
-<div id="returnMessage"></div>
-</div>
-
-<button class="secondary" onclick="location.reload()">Scan Another Invoice</button>
+<!-- ADMIN PASSWORD SETTINGS -->
+<section class="card" id="adminSettings">
+  <h2>Administrator – Delivery Password</h2>
+  <p class="muted">
+    The factory administrator must already be signed in to the main website
+    using the same Supabase project.
+  </p>
+  <label>New Delivery Password (minimum 8 characters)</label>
+  <input id="newDeliveryPassword" type="password" placeholder="New password">
+  <button onclick="changeDeliveryPassword()">Set / Change Password</button>
+  <div id="adminMessage"></div>
 </section>
 
-<section class="card hidden" id="adminSection">
-<h2>⚙️ Admin Password Settings</h2>
-<p class="notice">Only an authenticated factory admin can change the portal password.</p>
-<input type="password" id="newPassword" placeholder="New delivery password">
-<button onclick="changePassword()">Update Delivery Password</button>
-<div id="adminMessage"></div>
-</section>
+<div id="message" class="status hidden"></div>
 
-</div>
+</main>
+
+<footer>INDIAN MURI FACTORY · Delivery Management System</footer>
 
 <script>
+const CONFIG = window.AFSONA_CONFIG;
+
+if (!CONFIG || !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY) {
+  document.body.innerHTML =
+    '<h2 style="color:white;padding:30px">Supabase configuration missing. Check config.js.</h2>';
+  throw new Error("Supabase configuration missing");
+}
+
 const client = window.supabase.createClient(
- window.AFSONA_CONFIG.SUPABASE_URL,
- window.AFSONA_CONFIG.SUPABASE_ANON_KEY
+  CONFIG.SUPABASE_URL,
+  CONFIG.SUPABASE_ANON_KEY
 );
 
-let scanner=null;
-let scannedToken=null;
-let invoiceData=null;
-let portalUnlocked=false;
+let qrScanner = null;
+let tokenHash = null;
+let deliveryPassword = null;
+let invoiceData = null;
+let customerLedger = null;
 
-function el(id){return document.getElementById(id)}
-function show(id){el(id).classList.remove("hidden")}
-function hide(id){el(id).classList.add("hidden")}
-function msg(id,text){el(id).textContent=text}
+const $ = id => document.getElementById(id);
 
-function randomSafeEqual(a,b){
- return typeof a==="string" && typeof b==="string" && a===b;
+function esc(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[ch]);
 }
 
-async function startScanner(){
- try{
-  if(scanner){await scanner.clear();scanner=null}
-  scanner=new Html5Qrcode("reader");
-  await scanner.start(
-   {facingMode:"environment"},
-   {fps:10,qrbox:{width:230,height:230}},
-   async decodedText=>{
-    await stopScanner();
-    await acceptQR(decodedText);
-   },
-   ()=>{}
-  );
- }catch(e){alert("Camera error: "+e.message)}
+function money(value) {
+  return "₹" + Number(value || 0).toFixed(2);
 }
 
-async function stopScanner(){
- if(scanner){
-  try{await scanner.stop();await scanner.clear()}catch(e){}
-  scanner=null;
- }
+function showMessage(text, error=false) {
+  const box = $("message");
+  box.textContent = text;
+  box.className = "status " + (error ? "error" : "success");
+  box.classList.remove("hidden");
+  box.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
-function extractToken(text){
- try{
-  const url=new URL(text);
-  return url.searchParams.get("token");
- }catch(e){
-  return null;
- }
+function clearMessage() {
+  $("message").classList.add("hidden");
 }
 
-async function acceptQR(text){
- const token=extractToken(text);
- if(!token || !/^[a-f0-9]{64}$/i.test(token)){
-  alert("Invalid invoice QR code");
-  return;
- }
- scannedToken=token;
- show("passwordSection");
+async function hashToken(raw) {
+  const bytes = new TextEncoder().encode(raw);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest))
+    .map(b => b.toString(16).padStart(2,"0")).join("");
 }
 
-async function sha256(value){
- const bytes=new TextEncoder().encode(value);
- const digest=await crypto.subtle.digest("SHA-256",bytes);
- return Array.from(new Uint8Array(digest))
-  .map(b=>b.toString(16).padStart(2,"0")).join("");
+function extractToken(value) {
+  value = String(value || "").trim();
+  if (!value) throw new Error("QR token is empty");
+
+  try {
+    const url = new URL(value);
+    const token = url.searchParams.get("token");
+    if (token) return token;
+  } catch (_) {}
+
+  return value;
 }
 
-async function unlockPortal(){
- const password=el("deliveryPassword").value;
- if(!password){msg("passwordMessage","Enter password");return}
+async function acceptQR(value) {
+  try {
+    stopScanner();
+    const raw = extractToken(value);
+    tokenHash = await hashToken(raw);
 
- const {data,error}=await client.rpc("verify_delivery_password",{
-  p_password:password
- });
-
- if(error || !data || data.success!==true){
-  msg("passwordMessage","Incorrect password or access denied");
-  return;
- }
-
- portalUnlocked=true;
- await loadInvoice();
+    $("scanSection").classList.add("hidden");
+    $("passwordSection").classList.remove("hidden");
+    $("scanMessage").textContent = "QR detected. Enter delivery password.";
+  } catch (e) {
+    showMessage(e.message, true);
+  }
 }
 
-async function loadInvoice(){
- const tokenHash=await sha256(scannedToken);
- const {data,error}=await client.rpc("get_invoice_by_qr",{
-  p_token_hash:tokenHash
- });
-
- if(error || !data || data.success!==true){
-  alert(error?.message || data?.message || "Invoice unavailable");
-  return;
- }
-
- invoiceData=data;
- show("invoiceSection");
- show("adminSection");
- renderInvoice();
+function useManualToken() {
+  acceptQR($("manualToken").value);
 }
 
-function money(v){
- return "₹"+Number(v||0).toFixed(2);
+async function startScanner() {
+  try {
+    if (!window.Html5Qrcode) throw new Error("QR scanner library not loaded");
+
+    if (!qrScanner) {
+      qrScanner = new Html5Qrcode("reader");
+    }
+
+    await qrScanner.start(
+      { facingMode:"environment" },
+      { fps:10, qrbox:{width:230,height:230} },
+      text => acceptQR(text),
+      () => {}
+    );
+  } catch (e) {
+    showMessage("Camera could not start: " + e.message, true);
+  }
 }
 
-function renderInvoice(){
- const c=invoiceData.customer;
- const s=invoiceData.invoice;
- const items=invoiceData.items||[];
-
- let html=`
- <div class="info"><b>Invoice:</b> ${safe(s.invoice_number)}</div>
- <div class="info"><b>Date:</b> ${safe(s.invoice_date)}</div>
- <div class="info"><b>Customer:</b> ${safe(c.customer_name)}</div>
- <div class="info"><b>Shop:</b> ${safe(c.shop_name)}</div>
- <div class="info"><b>Mobile:</b> ${safe(c.mobile)}</div>
- <div class="info"><b>WhatsApp:</b> ${safe(c.whatsapp)}</div>
- <div class="info"><b>Village:</b> ${safe(c.village)}</div>
- <div class="info"><b>Post Office:</b> ${safe(c.post_office)}</div>
- <div class="info"><b>Police Station:</b> ${safe(c.police_station)}</div>
- <div class="info"><b>District:</b> ${safe(c.district)}</div>
- <div class="info"><b>PIN:</b> ${safe(c.pin_code)}</div>
- <div class="info"><b>Address:</b> ${safe(c.address)}</div>
- <h3>Invoice Products</h3>
- <table><tr><th>Product</th><th>Bags</th><th>Price</th><th>Total</th></tr>`;
-
- items.forEach((it,i)=>{
-  html+=`<tr><td>${safe(it.product_name)} (${safe(it.weight_kg)} Kg)</td>
-  <td>${it.quantity_bags}</td><td>${money(it.unit_price)}</td>
-  <td>${money(it.line_total)}</td></tr>`;
- });
- html+=`</table>
- <div class="info"><b>Invoice Total:</b> ${money(s.total_amount)}</div>
- <div class="info"><b>Invoice Status:</b> ${safe(s.status)}</div>`;
- el("invoiceDetails").innerHTML=html;
-
- el("returnItems").innerHTML=items.map((it,i)=>`
- <div class="info">
- <b>${safe(it.product_name)} - ${safe(it.weight_kg)} Kg</b><br>
- Original price per bag: ${money(it.unit_price)}
- <label>Returned bags</label>
- <input type="number" min="0" max="${Number(it.quantity_bags)}"
- id="returned_${i}" value="0">
- </div>`).join("");
+async function stopScanner() {
+  if (qrScanner && qrScanner.isScanning) {
+    try { await qrScanner.stop(); } catch (_) {}
+  }
 }
 
-function safe(value){
- return String(value??"").replace(/[&<>"']/g,ch=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
- }[ch]));
+async function unlockPortal() {
+  clearMessage();
+  const password = $("deliveryPassword").value;
+
+  if (!password) return showMessage("Enter delivery password", true);
+  if (!tokenHash) return showMessage("Scan invoice QR first", true);
+
+  deliveryPassword = password;
+
+  try {
+    await loadInvoice();
+    $("passwordSection").classList.add("hidden");
+    $("portal").classList.remove("hidden");
+    await loadCustomerLedger();
+    showMessage("Delivery Portal unlocked successfully");
+  } catch (e) {
+    deliveryPassword = null;
+    showMessage(e.message, true);
+  }
 }
 
-async function savePayment(){
- if(!portalUnlocked)return;
- const amount=Number(el("paymentAmount").value);
- if(!Number.isFinite(amount)||amount<=0){alert("Enter a valid payment amount");return}
- const {data,error}=await client.rpc("record_delivery_payment",{
-  p_invoice_id:invoiceData.invoice.id,
-  p_amount:amount,
-  p_payment_method:el("paymentMethod").value
- });
- if(error){msg("paymentMessage",error.message);return}
- msg("paymentMessage","Payment saved. Refresh invoice balance to see updated due.");
- el("paymentAmount").value="";
+async function rpc(name, args) {
+  const {data,error} = await client.rpc(name,args);
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-async function saveBagReturn(){
- if(!portalUnlocked)return;
- const white=Number(el("whiteBags").value);
- const color=Number(el("colorBags").value);
- if(white<0||color<0||!Number.isInteger(white)||!Number.isInteger(color)){
-  alert("Enter valid bag quantities");return;
- }
- const {data,error}=await client.rpc("record_empty_bag_return",{
-  p_invoice_id:invoiceData.invoice.id,
-  p_white_bags:white,
-  p_color_bags:color
- });
- if(error){msg("bagMessage",error.message);return}
- msg("bagMessage","Empty bag return saved.");
+async function loadInvoice() {
+  invoiceData = await rpc("get_delivery_invoice", {
+    p_token_hash:tokenHash,
+    p_password:deliveryPassword
+  });
+
+  if (!invoiceData) throw new Error("Invoice data not available");
+  renderInvoice();
 }
 
-async function saveMuriReturn(){
- if(!portalUnlocked)return;
- const returns=(invoiceData.items||[]).map((item,i)=>({
-  product_id:item.product_id,
-  quantity_bags:Number(el("returned_"+i).value||0),
-  unit_price:Number(item.unit_price)
- })).filter(x=>x.quantity_bags>0);
-
- if(!returns.length){alert("Enter returned muri bags");return}
-
- const {data,error}=await client.rpc("record_muri_return",{
-  p_invoice_id:invoiceData.invoice.id,
-  p_items:returns
- });
- if(error){msg("returnMessage",error.message);return}
- msg("returnMessage","Muri return saved. Original invoice prices applied.");
+function getCustomer() {
+  return invoiceData?.customer ||
+    invoiceData?.customer_details ||
+    {};
 }
 
-async function changePassword(){
- const password=el("newPassword").value;
- if(!portalUnlocked){alert("Unlock portal first");return}
- if(password.length<8){alert("Password must be at least 8 characters");return}
- const {data,error}=await client.rpc("set_delivery_password",{
-  p_new_password:password
- });
- if(error){msg("adminMessage",error.message);return}
- msg("adminMessage","Password updated successfully.");
- el("newPassword").value="";
+function getItems() {
+  return invoiceData?.invoice_items ||
+    invoiceData?.items ||
+    [];
 }
 
-async function checkAdmin(){
- const {data:{user}}=await client.auth.getUser();
- if(!user)return;
- const {data,error}=await client.rpc("is_factory_admin");
- if(!error && data===true)show("adminSection");
+function getInvoiceNumber() {
+  return invoiceData?.invoice_number ||
+    invoiceData?.invoice?.invoice_number ||
+    "Invoice";
 }
-checkAdmin();
-</script>
-</body>
-</html>
+
+function renderInvoice() {
+  const c = getCustomer();
+  const items = getItems();
+
+  $("invoiceSummary").innerHTML = `
+    <div class="grid">
+      <div class="stat"><small>Invoice Number</small><strong>${esc(getInvoiceNumber())}</strong></div>
+      <div class="stat"><small>Invoice Amount</small><strong>${money(invoiceData.invoice_amount ?? invoiceData.total_amount)}</strong></div>
+      <div class="stat"><small>Total Paid</small><strong>${money(invoiceData.total_paid)}</strong></div>
+      <div class="stat"><small>Muri Return Credit</small><strong>${money(invoiceData.muri_return_credit)}</strong></div>
+      <div class="stat"><small>Remaining Due</small><strong>${money(invoiceData.remaining_due)}</strong></div>
+    </div>
+  `;
+
+  $("customerDetails").innerHTML = `
+    <p><b>Name:</b> ${esc(c.customer_name || invoiceData.customer_name)}</p>
+    <p><b>Shop:</b> ${esc(c.shop_name || "")}</p>
+    <p><b>Mobile:</b> ${esc(c.mobile || invoiceData.phone || "")}</p>
+    <p><b>WhatsApp:</b> ${esc(c.whatsapp || "")}</p>
+    <p><b>Village:</b> ${esc(c.village || "")}</p>
+    <p><b>Post Office:</b> ${esc(c.post_office || "")}</p>
+    <p><b>Police Station:</b> ${esc(c.police_station || "")}</p>
+    <p><b>District:</b> ${esc(c.district || "")}</p>
+    <p><b>State:</b> ${esc(c.state || "")}</p>
+    <p><b>PIN:</b> ${esc(c.pin_code || "")}</p>
+    <p><b>Address:</b> ${esc(c.full_address || c.address || "")}</p>
+  `;
+
+  $("invoiceItems").innerHTML = items.map(i => `
+    <div class="item">
+      <b>${esc(i.product_name || "Product")}</b>
+      <p class="muted">${esc(i.product_type || "")} · ${esc(i.weight_kg || "")} kg</p>
+      <p>Quantity: ${esc(i.quantity_bags)} bags</p>
+      <p>Unit Price: ${money(i.unit_price)}</p>
+      <b>Line Total: ${money(i.line_total)}</b>
+    </div>
+  `).join("") || "<p class='muted'>No invoice items found.</p>";
+
+  renderDeliveryForm(items);
+  renderMuriForm(items);
+  renderBagForm();
+
+  renderHistory();
+}
+
+function renderDeliveryForm(items) {
+  $("deliveryFormItems").innerHTML = items.map(i => `
+    <div class="item">
+      <b>${esc(i.product_name)}</b>
+      <p class="muted">${esc(i.product_type)} · ${esc(i.weight_kg)} kg · Sold ${esc(i.quantity_bags)}</p>
+      <label>Quantity to send now</label>
+      <input type="number" min="0" step="1" value="0"
+        data-delivery-sale-item="${esc(i.sale_item_id)}">
+    </div>
+  `).join("");
+}
+
+function renderMuriForm(items) {
+  $("muriReturnItems").innerHTML = items.map(i => `
+    <div class="item">
+      <b>${esc(i.product_name)}</b>
+      <p class="muted">Original price: ${money(i.unit_price)} per bag</p>
+      <label>Returned bags</label>
+      <input type="number" min="0" step="1" value="0"
+        data-muri-sale-item="${esc(i.sale_item_id)}">
+    </div>
+  `).join("");
+}
+
+function renderBagForm() {
+  const deliveries = invoiceData.delivery_history || [];
+  const completed = deliveries.filter(d => d.status === "delivered");
+
+  if (!completed.length) {
+    $("bagReturnItems").innerHTML =
+      "<p class='muted'>Complete a delivery before recording empty bag returns.</p>";
+    return;
+  }
+
+  $("bagReturnItems").innerHTML = completed.map(d => `
+    <div class="item">
+      <b>${esc(d.delivery_number || d.delivery_id)}</b>
+      <p class="muted">Delivery date: ${esc(d.date || "")}</p>
+      ${(d.items || []).map(i => `
+        <div class="item">
+          ${esc(i.product_name)} · ${esc(i.product_type)} · ${esc(i.weight_kg)} kg
+          <p class="muted">Sent: ${esc(i.quantity_sent)} bags</p>
+          <label>Empty bags returned</label>
+          <input type="number" min="0" step="1" value="0"
+            data-bag-delivery-item="${esc(i.delivery_item_id)}">
+        </div>
+      `).join("")}
+    </div>
+  `).join("");
+}
+
+async function saveDelivery() {
+  try {
+    const items = [...document.querySelectorAll("[data-delivery-sale-item]")]
+      .map(el => ({
+        sale_item_id:el.dataset.deliverySaleItem,
+        quantity_sent:Number(el.value)
+      }))
+      .filter(i => i.quantity_sent > 0);
+
+    if (!items.length) throw new Error("Enter at least one delivery quantity");
+
+    const result = await rpc("create_delivery_from_invoice", {
+      p_token_hash:tokenHash,
+      p_password:deliveryPassword,
+      p_items:items,
+      p_vehicle_number:$("vehicleNumber").value || null,
+      p_driver_name:$("driverName").value || null,
+      p_notes:$("deliveryNotes").value || null
+    });
+
+    showMessage("Delivery saved. Delivery number ID: " + result.delivery_id);
+    await refreshAll();
+  } catch(e) {
+    showMessage(e.message,true);
+  }
+}
+
+async function savePayment() {
+  try {
+    const amount = Number($("paymentAmount").value);
+    if (!amount || amount <= 0) throw new Error("Enter a valid payment amount");
+
+    const result = await rpc("record_delivery_payment", {
+      p_token_hash:tokenHash,
+      p_password:deliveryPassword,
+      p_amount:amount,
+      p_payment_method:$("paymentMethod").value,
+      p_reference_number:$("paymentReference").value || null,
+      p_notes:$("paymentNotes").value || null
+    });
+
+    $("paymentAmount").value = "";
+    $("paymentReference").value = "";
+    $("paymentNotes").value = "";
+
+    showMessage("Payment saved. Remaining Due: " + money(result.remaining_due));
+    await refreshAll();
+  } catch(e) {
+    showMessage(e.message,true);
+  }
+}
+
+async function saveMuriReturn() {
+  try {
+    const items = [...document.querySelectorAll("[data-muri-sale-item]")]
+      .map(el => ({
+        sale_item_id:el.dataset.muriSaleItem,
+        quantity_returned:Number(el.value)
+      }))
+      .filter(i => i.quantity_returned > 0);
+
+    if (!items.length) throw new Error("Enter at least one Muri Return quantity");
+
+    const result = await rpc("record_muri_return", {
+      p_token_hash:tokenHash,
+      p_password:deliveryPassword,
+      p_items:items,
+      p_notes:$("muriReturnNotes").value || null
+    });
+
+    showMessage("Muri Return saved. Credit: " + money(result.total_credit));
+    await refreshAll();
+  } catch(e) {
+    showMessage(e.message,true);
+  }
+}
+
+async function saveBagReturn() {
+  try {
+    const items = [...document.querySelectorAll("[data-bag-delivery-item]")]
+      .map(el => ({
+        delivery_item_id:el.dataset.bagDeliveryItem,
+        quantity_returned:Number(el.value)
+      }))
+      .filter(i => i.quantity_returned > 0);
+
+    if (!items.length) throw new Error("Enter at least one bag return quantity");
+
+    const result = await rpc("record_empty_bag_return", {
+      p_token_hash:tokenHash,
+      p_password:deliveryPassword,
+      p_items:items,
+      p_notes:$("bagReturnNotes").value || null
+    });
+
+    showMessage(
+      "Bag Return saved. White: " + result.white_bags_returned +
+      " | Color: " + result.color_bags_returned
+    );
+    await refreshAll();
+  } catch(e) {
+    showMessage(e.message,true);
+  }
+}
+
+function renderHistory() {
+  const payments = invoiceData.payment_history || [];
+  const muri = invoiceData.muri_return_history || [];
+  const bags = invoiceData.bag_return_history || [];
+  const deliveries = invoiceData.delivery_history || [];
+
+  $("paymentHistory").innerHTML = payments.map(p => `
+    <div class="item">
+      <b>${money(p.amount)}</b> · ${esc(p.method)}
+      <p class="muted">${esc(p.date)} · ${esc(p.reference_number || "")}</p>
+      ${esc(p.notes || "")}
+    </div>
+  `).join("") || "<p class='muted'>No payments recorded.</p>";
+
+  $("muriHistory").innerHTML = muri.map(r => `
+    <div class="item">
+      <b>${esc(r.date)}</b>
+      <p>${esc(r.notes || "")}</p>
+      ${(r.items || []).map(i => `
+        <p>${esc(i.product_name)} · ${esc(i.quantity)} bags · Credit ${money(i.credit)}</p>
+      `).join("")}
+    </div>
+  `).join("") || "<p class='muted'>No Muri Returns.</p>";
+
+  $("bagHistory").innerHTML = bags.map(r => `
+    <div class="item">
+      <b>${esc(r.date)}</b>
+      <p>White Bags: ${esc(r.white_bags)} | Color Bags: ${esc(r.color_bags)}</p>
+      ${esc(r.notes || "")}
+    </div>
+  `).join("") || "<p class='muted'>No Empty Bag Returns.</p>";
+
+  $("deliveryHistory").innerHTML = deliveries.map(d => `
+    <div c
