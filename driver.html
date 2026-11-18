@@ -313,10 +313,10 @@ async function submitDelivery(){
   const {data,error}=await db.rpc("submit_driver_delivery",{
    p_token:token,
    p_password:driverPassword,
-   p_driver_name:driverName,
+   p_driver_name:"",
    p_cash_received:cash,
    p_online_received:online,
-   p_transaction_id:transactionId,
+   p_transaction_id:null,
    p_white_bags_returned:white,
    p_color_bags_returned:colored,
    p_returns:returns,
